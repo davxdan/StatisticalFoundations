@@ -1,0 +1,17 @@
+ 
+ 1          OPTIONS NONOTES NOSTIMER NOSOURCE NOSYNTAXCHECK;
+ 61         
+ 62         proc ttest data= WORK.MYCSV sides=2 ho = 0;
+ 63         class Educ;
+ 64         var Income;
+ ERROR: Variable Income in list does not match type prescribed for this list.
+ 65         run;
+ 
+ NOTE: The SAS System stopped processing this step because of errors.
+ NOTE: PROCEDURE TTEST used (Total process time):
+       real time           0.00 seconds
+       cpu time            0.00 seconds
+       
+ 66         
+ 67         OPTIONS NONOTES NOSTIMER NOSOURCE NOSYNTAXCHECK;
+ 80         

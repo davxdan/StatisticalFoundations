@@ -1,0 +1,9 @@
+{
+  "port": 8888,
+  "notebook_dir": "/folders/myfolders",
+  "url": "http://localhost:8888/",
+  "base_url": "/",
+  "pid": 1668,
+  "secure": false,
+  "hostname": "localhost"
+}
