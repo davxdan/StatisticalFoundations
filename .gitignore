@@ -2,3 +2,14 @@
 .Rhistory
 .RData
 .Ruserdata
+*.key
+*.json
+*.json
+*.json
+.local/share/jupyter/runtime/nbserver-1661.json
+.local/share/jupyter/runtime/nbserver-1671.json
+*.json
+.local/share/jupyter/runtime/nbserver-1681.json
+.local/share/jupyter/runtime/nbserver-1681.json~2ce550f98d7a04fcb33a193a37d9bf0fdb706e51
+*.json~HEAD
+*.key
