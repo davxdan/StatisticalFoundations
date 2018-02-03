@@ -21,16 +21,8 @@ by  descending  PercentLost;
 proc print data=import;
 
 /* Run the Rank Sum test  */
-proc npar1way data=WORK.IMPORT wilcoxon;
+proc npar1way data=WORK.IMPORT wilcoxon alpha = .05;
 	class Action;
 	var PercentLost;
-run;
-
-
-
-/* Now look at differences in math and writing scores by race.  */
-proc npar1way data= WORK.IMPORT wilcoxon;
-	class  Action;
-	var  PercentLost;
-	exact Wilcoxon/mc;
+	exact HL;
 run;
