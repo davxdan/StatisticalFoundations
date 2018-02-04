@@ -8,6 +8,7 @@ output: word_document
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
+#### Problem 2b
 #####Wilcoxon rank sum test
 ```{r}
 Logged = c(85.6 ,85.4 ,75.5 ,53.1 ,46.7 ,45 ,43.2 ,40.8 ,18.2)
@@ -18,4 +19,13 @@ wilcox.test(Logged,Notlogged, correct=TRUE)
 ```{r}
 sum(rank(c(Logged,Notlogged))[1:9])
 sum(rank(c(Logged,Notlogged))[10:16]) #Sum ranks not Logged
+```
+#### Problem 3e
+```{r}
+library(readr)
+EducationData <- read_csv("EducationData.csv", 
+    col_types = cols(Subject = col_skip()))
+t.test(EducationData$Income2005 ~ EducationData$Educ, data=EducationData, 
+       var.equal=FALSE,
+       conf.level=0.95)
 ```
