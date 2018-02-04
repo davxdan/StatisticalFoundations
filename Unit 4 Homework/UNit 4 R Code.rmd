@@ -29,3 +29,18 @@ t.test(EducationData$Income2005 ~ EducationData$Educ, data=EducationData,
        var.equal=FALSE,
        conf.level=0.95)
 ```
+#### Problem 5e
+```{r}
+## Two-sample test.
+## Hollander & Wolfe (1973), 69f.
+## Permeability constants of the human chorioamnion (a placental
+##  membrane) at term (x) and between 12 to 26 weeks gestational
+##  age (y).  The alternative of interest is greater permeability
+##  of the human chorioamnion for the term pregnancy.
+x <- c(85 ,70 ,40 ,65 ,80 ,75 ,55 ,20 ,70)
+y <- c(75 ,50 ,50 ,40 ,20 ,65 ,40 ,25 ,30)
+wilcox.test(x, y, alternative = "g")    
+wilcox.test(x, y, alternative = "greater",
+            exact = FALSE, correct = FALSE)
+                                           
+wilcox.test(rnorm(9), rnorm(9, 2), conf.int = TRUE)
