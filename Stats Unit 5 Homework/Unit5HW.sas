@@ -2,58 +2,101 @@
 /* Source File: ex0525.csv */
 /* Source Path: /folders/myfolders/Datasets */
 /* Code generated on: 2/10/18, 10:02 AM */
-%web_drop_table(WORK.IMPORT);
+%web_drop_table(WORK.Education);
 FILENAME REFFILE '/folders/myfolders/Datasets/ex0525.csv';
 PROC IMPORT DATAFILE=REFFILE
 	DBMS=CSV
-	OUT=WORK.IMPORT;
+	OUT=WORK.Education;
 	GETNAMES=YES;
 RUN;
-PROC CONTENTS DATA=WORK.IMPORT; RUN;
-%web_open_table(WORK.IMPORT);
+/* PROC CONTENTS DATA=WORK.Education; RUN; */
+/* Proc Print data=Education; run; */
 
-/* proc univariate data = SamoaEmployees; */
-/* by EmploymentStatus; */
-/* histogram; */
-/* qqplot Age; */
-/* run; */
-/*  */
-/* Get the Critical Value */
-/* data critval; */
-/* cv = quantile("T", .05, 49);  */
-/* alpha  = .05; */
-/* proc print data = critval; */
-/* run; */
-/*  */
+proc Sort data=Education;
+	by Educ;
+
+proc univariate data = Education;
+by  Educ;
+histogram;
+qqplot  Income2005;
+run;
+
 /* Boxplot */
-/* proc boxplot data=SamoaEmployees; */
-/* plot Age*EmploymentStatus; */
+proc boxplot data=Education;
+plot Income2005*Educ;
+run;
+
+/* Means */
+proc means data=Education;
+run;
+
+/* ANOVA using GLM */
+Proc GLM data=Education;
+class Educ;
+model Income2005 = Educ;
+/* means Educ / bon Tukey SNK REGWQ; */
+run;
+
+
+/* proc ttest data = Education; */
+/* class Educ; */
+/* var Income2005; */
 /* run; */
-/*  */
 
 
+/* Below is an excerpt from a SAS help document that shows the types of post hoc tests available in SAS. */
+/* MEANS effects / options ;    */
+/* The following MEANS statement options are used to select a multiple comparison procedure:  */
+/* BON DUNCAN DUNNETT DUNNETTL DUNNETTU GABRIEL GT2 LSD REGWF REGWQ SCHEFFE SIDAK SMM SNK T TUKEY WALLER. */
+/* The following MEANS statement options specify details for the multiple comparison procedure: ALPHA= p CLDIFF CLM  */
+/* To perform post-hoc analyses in SAS, you need to add a “means” statement after the model statement (see code below). */
+Proc GLM data=smile;
+class smile;
+model rating = smile;
+means smile / bon Tukey SNK REGWQ;
+run;
 
 
-/* SAS Code for ANOVA Exercise */
-/*  */
-/* Code to enter the data */
-/* filename smile 'C:\correct\pathname\leniency.csv'; */
-/* data smile; */
-/* infile smile firstobs = 2, dlm = ‘,’; */
-/* input smile rating; */
-/* if smile = 1 then type = “False”; */
-/* if smile = 2 then type = “Genuine”; */
-/* if smile = 3 then type = “Miserable”; */
-/* if smile = 4 then type = “Neutral”; */
-/*  */
-/* run; */
-/* Proc Print data=smile; run; */
-/* Always print the data to check that it has been */
-/* entered correctly! */
-/* Proc GLM data=smile; */
-/* class smile; */
-/* model rating = smile; */
-/* run; */
+/* D.	Comparisons to a control */
+/* The Dunnett’s test is used for comparisons of each group to a control group. The syntax is a little different, since the control group must be specified. Is there evidence that the mean rating for the control group is statistically significantly from the mean ratings of other groups? */
+Proc GLM data=smile;
+class smile;
+model rating = smile;
+means smile / dunnett(‘CONTROL’); /* You have to supply the control group! */
+run;
+
+/* Analysis of Random Effects */
+/* An experiment was conducted to compare four different fermentation processes: F1, F2, F3, and F4.  An organic raw material is common to each process and can be made in batches that are adequate for four runs.  This raw material exhibits substantial variation batch-to-batch.  A block design was used with the following results (the response in a measure of fermentation efficiency and in measured in percent): */
+
+Data Ferment;
+  input Batch Process $ Response @@;
+  title1 'Mason, Gunst, & Hess: Exercise 10.17';
+Datalines;
+1  F1  84 2  F1  79 3  F1  76 4  F1  82 5  F1  74
+1  F2  83 2  F2  72 3  F2  82 4  F2  97 5  F2  76
+1  F3  92 2  F3  87 3  F3  82 4  F3  84 5  F3  75
+1  F4  89 2  F4  74 3  F4  80 4  F4  79 5  F4  83
+;
+run;
+Proc Print data=Ferment;
+run;
+ods rtf;
+Proc GLM data=Ferment;
+* Illustrate that GLM Standard Errors are Incorrect;
+  class batch process;
+  model response = batch process;
+  random batch / test;
+  lsmeans process / stderr pdiff;
+run;
+Proc Mixed data=Ferment CL Covtest;
+* Mixed has Correct Standard Errors;
+  class batch process;
+  model response = process;
+  random batch ;
+  lsmeans process / adjust=tukey pdiff;
+run;
+ods rtf close;
+
 
 /* Option Groups for Common Analyses */
 /* This section summarizes the syntax for the common analyses supported in the ONEWAYANOVA statement.  */
@@ -96,3 +139,10 @@ proc power;
           npergroup = 50
           power = .;
     run; 
+    
+/* Get the Critical Value */
+/* data critval; */
+/* cv = quantile("T", .05, 49);  */
+/* alpha  = .05; */
+/* proc print data = critval; */
+/* run; */
