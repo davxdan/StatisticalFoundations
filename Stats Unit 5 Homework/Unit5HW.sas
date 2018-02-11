@@ -18,16 +18,16 @@ proc Sort data=Education;
 	by Educ;
 
 	/*  */
-proc univariate data=Education;
-	by Educ;
-	histogram;
-	qqplot Income2005;
-run;
-
+/* proc univariate data=Education; */
+/* 	by Educ; */
+/* 	histogram; */
+/* 	qqplot Income2005; */
+/* run; */
+/*  */
 /* Boxplot */
-proc boxplot data=Education;
-	plot Income2005*Educ;
-run;
+/* proc boxplot data=Education; */
+/* 	plot Income2005*Educ; */
+/* run; */
 
 /* Means */
 /* proc means data=Education; */
@@ -49,11 +49,11 @@ RUN;
 proc Sort data=lEducation;
 	by Educ;
 /*  */
-proc univariate data=lEducation;
-	by Educ;
-	histogram;
-	qqplot loggedIncome2005;
-run;
+/* proc univariate data=lEducation; */
+/* 	by Educ; */
+/* 	histogram; */
+/* 	qqplot loggedIncome2005; */
+/* run; */
 
 /* Boxplot */
 proc boxplot data=WORK.LEDUCATION;
@@ -72,6 +72,13 @@ run;
 
 
 /* Check my numbers vs books */
+%web_drop_table(WORK.IMPORT);
+FILENAME REFFILE '/folders/myfolders/Datasets/case0502.csv';
+PROC IMPORT DATAFILE=REFFILE
+	DBMS=CSV
+	OUT=WORK.IMPORT;
+	GETNAMES=YES;
+RUN;
 Proc GLM data= WORK.IMPORT;
 class  Judge;
 model  Percent =  Judge;
