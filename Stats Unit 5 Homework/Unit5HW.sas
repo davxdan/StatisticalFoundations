@@ -8,32 +8,28 @@ PROC IMPORT DATAFILE=REFFILE
 	DBMS=CSV
 	OUT=WORK.Education;
 	GETNAMES=YES;
-RUN;
 /* PROC CONTENTS DATA=WORK.Education; RUN; */
 DATA Education(DROP = Subject); 
 SET Education;
-RUN;
 /* Proc Print data=Education; run; */
 proc Sort data=Education;
 	by Educ;
 
-
-/* proc univariate data=Education; */
-/* 	by Educ; */
-/* 	histogram; */
-/* 	qqplot Income2005; */
-
+proc univariate data=Education;
+	by Educ;
+	histogram;
+	qqplot Income2005;
 
 /* Boxplot */
-/* proc boxplot data=Education; */
-/* 	plot Income2005*Educ; */
+proc boxplot data=Education;
+	plot Income2005*Educ;
 
 
 /* ANOVA using GLM */
 /* Proc GLM data=Education; */
 /* class Educ; */
 /* model Income2005 = Educ; */
-/* means Educ / bon Tukey SNK REGWQ; */
+/* means Educ; */
 
 /* Log Transform the Education Data */
 data lEducation;
@@ -45,23 +41,21 @@ RUN;
 
 proc Sort data=lEducation;
 	by Educ;
-/*  */
-/* proc univariate data=lEducation; */
-/* 	by Educ; */
-/* 	histogram; */
-/* 	qqplot loggedIncome2005; */
-/* run; */
+
+proc univariate data=lEducation;
+	by Educ;
+	histogram;
+	qqplot loggedIncome2005;
 
 /* Boxplot */
-/* proc boxplot data=WORK.LEDUCATION; */
-/* 	plot loggedIncome2005*Educ; */
-/* run; */
+proc boxplot data=WORK.LEDUCATION;
+	plot loggedIncome2005*Educ;
 
 /* Means */
 /* proc means data=lEducation N mean stddev min q1 median q3 max; */
 /* by Educ; */
 /* var  loggedIncome2005; */
-/* run; */
+
 
 /* ANOVA using GLM */
 Proc GLM data= WORK.LEDUCATION;
