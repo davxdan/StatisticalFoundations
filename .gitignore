@@ -8,3 +8,4 @@
 Unit 4 Homework/EducationData.csv
 .local/share/jupyter/runtime/nbserver-1681.json~2ce550f98d7a04fcb33a193a37d9bf0fdb706e51
 .local/share/jupyter/runtime/nbserver-1681.json~HEAD
+*.json
