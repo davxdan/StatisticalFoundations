@@ -1,4 +1,4 @@
-#MSDS 6371 Statistical Foundations for Data Science
+# MSDS 6371 Statistical Foundations for Data Science
 Daniel Davieau 
 Assignments and SAS Code
 
