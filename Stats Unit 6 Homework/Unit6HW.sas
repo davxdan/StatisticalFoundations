@@ -10,21 +10,23 @@
 		GETNAMES=YES;
 	PROC print DATA=WORK.HandicapData;
 
-	/* Bonferroni Test	(Full) */
-		proc glm data = work.handicapdata;
-		class  Handicap;
-		model  Score =  Handicap;
-		means Handicap / HOVTEST=bf bon cldiff;
+/* 	Bonferroni Test	(Full) */
+/* 		proc glm data = work.handicapdata; */
+/* 		class  Handicap; */
+/* 		model  Score =  Handicap; */
+/* 		means Handicap / HOVTEST=bf bon cldiff; */
 		
-		proc glm data = work.handicapdata;
-		class  Handicap;
-		model  Score =  Handicap;
-		means Handicap;
-		
+/* 		Get Means: Results are same as book	 */
+/* 		proc glm data = work.handicapdata; */
+/* 		class  Handicap; */
+/* 		model  Score =  Handicap; */
+/* 		means Handicap; */
+
 		proc glm data= work.handicapdata ORDER = DATA;
 		class  Handicap;
 		model  Score =  Handicap;
 		means Handicap/ HOVTEST=bf bon cldiff;
-		CONTRAST 'μ2- μ3' Handicap 0 1 -1 0 0 0;
-		
+		CONTRAST 'Amputee - Crutches' Handicap 0 1 -1 0 0 ;
+		CONTRAST 'Amputee - Wheelchair' Handicap 0 1 0 0 -1;
+		CONTRAST 'Crutches - Wheelchair' Handicap 0 0 1 0 -1;
 		
