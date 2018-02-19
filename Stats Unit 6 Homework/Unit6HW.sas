@@ -12,7 +12,8 @@
 		class  Handicap;
 		model  Score =  Handicap;
 		means Handicap / HOVTEST=bf bon cldiff;
-/* 		lsmeans Handicap/ pdiff adjust = bon cl;  */
+		lsmeans Handicap/ pdiff; 
+		/*lsmeans Handicap/ pdiff adjust = bon cl;*/
 		
 	/*	Get Means just to seeif the results are same as book */
 		proc glm data = work.handicapdata;
@@ -23,7 +24,9 @@
 		proc glm data= work.handicapdata ORDER = DATA;
 		class  Handicap;
 		model  Score =  Handicap;
-		means Handicap/ HOVTEST=bf bon cldiff;
+		means Handicap / HOVTEST=bf bon cldiff;
+	/*	lsmeans Handicap/ pdiff adjust = bon cl; */
+		lsmeans Handicap/ pdiff;
 		CONTRAST 'Amputee - Crutches' Handicap 0 1 -1 0 0 ;
 		CONTRAST 'Amputee - Wheelchair' Handicap 0 1 0 0 -1;
 		CONTRAST 'Crutches - Wheelchair' Handicap 0 0 1 0 -1;

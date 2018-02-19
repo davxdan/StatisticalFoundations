@@ -1,62 +1,49 @@
 ---
-title: "StatsHomework Problem 3"
+title: "Unit6Q3"
 author: "Daniel Davieau"
-date: "February 17, 2018"
+date: "February 18, 2018"
 output: word_document
-keep_md: yes
 ---
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE, tidy=TRUE)
+```{r setup, include=FALSE, tidy=TRUE}
+knitr::opts_chunk$set(echo = TRUE)
+library(readr)
+library(tidyverse)
+library(ggplot2)
+library(pairwiseCI)
+library(multcomp)
 ```
-#####Load Sleuth Chapter 6
->```{r, eval=FALSE}
->require(Sleuth3)
->require(mosaic)
->```
+###ANOVA
+```{r, root.dir, tidy=TRUE}
+setwd("C:/Users/davxd/Documents/GitHub/myfolders/Stats Unit 6 Homework")
 
-#####Load the Data
-```{r}
-Library(readr)
-case0601 <- read_csv("Unit 6 Handicap Data.csv")
-View(case0601)
+ex0525 <- read.table("ForRex0525.csv", sep = ",",header = TRUE)
+Education <- data.frame(ex0525)
+fit = aov(Income2005~Educ, data = Education)
+summary(fit)
 ```
-#####Install and Load Packages
-```{r, eval=FALSE}
-install.packages("C:/Users/davxd/Desktop/agricolae_1.2-8.zip", repos = NULL, type = "win.binary")
-require(agricolae)
-require(klaR)
-require(MASS)
-require(nlme)
-require(cluster)
-require(spdep)
-require(AlgDesign)
+### 95% COnfidence Intervals
+```{r, tidy=TRUE}
+pairwiseCI(Income2005~Educ, data = Education)
 ```
-##### LSD
-```{r}
-LSD<-LSD.test(aov(lm(Score ~ Handicap, data=case0601)), "Handicap")
-LSD
+### Tukey
+```{r, tidy=TRUE}
+gfit = glht(fit, linfct = mcp(Educ = "Tukey"))
+summary(gfit,test= adjusted(type= "none"))
+confint(gfit)
 ```
-##### Dunnett
+### Dunnette
 ```{r}
+Education$Educ=relevel(Education$Educ, ref = "12")
+fit = aov(Income2005~Educ, data = Education)
+gfit = glht(fit, linfct = mcp(Educ = "Dunnett"))
+summary(gfit)
+confint(gfit)
+```
+  You can also embed plots, for example:
 
-
-```
-
-##### Tukey Kramer
-```{r}
-TukeyKramer<-HSD.test(aov(lm(Score ~ Handicap, data=case0601)), "Handicap")
-TukeyKramer
-```
-##### Bonferronni
-```{r}
-BonFeronni<-LSD.test(aov(lm(Score ~ Handicap, data=case0601)), "Handicap", p.adj=c("bonferroni"))
-BonFeronni
-```
-##### Scheffe
-```{r}
-scheffe<-scheffe.test(aov(lm(Score ~ Handicap, data=case0601)), "Handicap")
-scheffe
+```{r pressure, echo=FALSE}
+plot(pressure)
 ```
 
-
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
