@@ -54,67 +54,61 @@ data SamoaEmployees;
 0 52
 0 54
 ;
-/* Sort the Data. This makes the class 0 (Employment status) first so we are subtracting fired from not fired. */
-proc Sort data=SamoaEmployees;
+
+	
+proc Sort data=SamoaEmployees; /* Sort the Data. This makes the class 0 (Employment status) first so we are subtracting fired from not fired. */
 	by EmploymentStatus;
 
-/* Proc Print data=SamoaEmployees; */
+	
+data critval;/* 	Get the Critical Value for the permutation test */
+	cv=quantile("T", .025, 998);
 
-/* Get the Critical Value for the permutation test*/
-/* data critval; */
-/* cv = quantile("T", .05, 998);  */
-/* alpha  = .05; */
-/* proc print data = critval; */
-/* run; */
+	/* Permutation borrowed code from internet ... randomizes observations and creates a matrix ... one row per randomization*/
+	
+proc ttest data=SamoaEmployees sides=2;/* Run a ttest to get the difference in means. The difference in this case(1-2) = -1.9238*/
+	class EmploymentStatus;
+	var Age;
 
-/* Permutation; */
+	ods output off;
+	ods exclude all;
+proc iml ;
+	use SamoaEmployees;
+	read all var{EmploymentStatus Age} into x; /*its imporant that the class is first and then the viariable*/
+	p=t(ranperm(x[, 2], 1000));	/*Note that the "1000" here is the number of permutations.*/
+	paf=x[, 1]||p;
+	create newds from paf;
+	append from paf;
+	quit;
+	*calculates differences and creates a histogram;
+	ods output conflimits=diff;
 
-/* Run a ttest to get the difference in means */
-/* proc ttest data=SamoaEmployees sides=l; */
-/* 	class EmploymentStatus; */
-/* 	var Age; */
-/* run; */
-/*Diff (1-2) = -1.9238*/
-
-ods output off;
-ods exclude all;
-                                                                                                                                                                                                                         
-*borrowed code from internet ... randomizes observations and creates a matrix ... one row per randomization ;                                                                                                                
-proc iml;                                                                                                                                                                                                                    
-use SamoaEmployees;
-read all var{EmploymentStatus Age} into x; *its imporant that the class is first and then the viariable;
-p = t(ranperm(x[,2],1000));    *Note that the "1000" here is the number of permutations.;
-paf = x[,1]||p;                                                                                                                                                                                                              
-create newds from paf;                                                                                                                                                                                                       
-append from paf;                                                                                                                                                                                                             
-quit;                                                                                                                                                                                                                        
-                                                                                                                                                                                                                             
-*calculates differences and creates a histogram;                                                                                                                                                                             
-ods output conflimits=diff;                                                                                                                                                                                                  
-proc ttest data=newds plots=none sides=l alpha=.05;                                                                                                                                                                                            
-  class col1;                                                                                                                                                                                                                
-  var col2 - col1001;                                                                                                                                                                                                        
-run;                                                                                                                                                                                                                         
-
-ods output on;
-ods exclude none;       
-                  
-proc univariate data=diff;                                                                                                                                                                                                   
-  where method = "Pooled";                                                                                                                                                                                                   
-  var mean;                                                                                                                                                                                                                  
-  histogram mean;                                                                                                                                                                                                            
-run;                                                                                                                                                                                                                         
-                                                                                                                                                                                  
-*The code below calculates the number of randomly generated differences that are as extreme or more extreme thant the one observed (divide this number by 1000 you have the pvalue);                                         
-*check the log to see how many observations are in the data set.... divide this by 1000 (or however many permutations you generated) and that is the (one sided)p-value;                                                     
-data numdiffs;                                                                                                                                                                                                               
-set diff;                                                                                                                                                                                                                    
-where method = "Pooled";                                                                                                                                                                                                     
-if abs(mean) >= -1.9238;   *you will need to put the observed difference you got from t test above here.  note if you have a one or two tailed test.;                                                                           
-run;                                                                                                                                                                                                                         
-* just a visual of the rows produced ... you can get the number of obersvations from the last data step and the Log window.;                                                                                                 
-proc print data = numdiffs;                                                                                                                                                                                                  
-where method = "Pooled";                                                                                                                                                                                                     
+proc ttest data=newds plots=none sides=2 alpha=.05;
+	class col1;
+	var col2 - col1001;
 run;
 
-    
+ods output on;
+ods exclude none;
+
+proc univariate data=diff;
+	where method="Pooled";
+	var mean;
+	histogram mean;
+run;
+
+*The code below calculates the number of randomly generated differences that are as extreme or more extreme thant the one observed (divide this number by 1000 you have the pvalue);
+*check the log to see how many observations are in the data set.... divide this by 1000 (or however many permutations you generated) and that is the (one sided)p-value;
+
+data numdiffs;
+	set diff;
+	where method="Pooled";
+
+	if abs(mean) >=-1.9238;
+	*you will need to put the observed difference you got from t test above here.  note if you have a one or two tailed test.;
+run;
+
+* just a visual of the rows produced ... you can get the number of obersvations from the last data step and the Log window.;
+
+proc print data=numdiffs;
+	where method="Pooled";
+run;
