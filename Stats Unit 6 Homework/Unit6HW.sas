@@ -13,7 +13,7 @@
 		model  Score =  Handicap;
 		means Handicap / HOVTEST=bf bon cldiff;
 		lsmeans Handicap/ pdiff; 
-		/*lsmeans Handicap/ pdiff adjust = bon cl;*/
+		lsmeans Handicap/ pdiff adjust = bon cl;
 		
 	/*	Get Means just to seeif the results are same as book */
 		proc glm data = work.handicapdata;
