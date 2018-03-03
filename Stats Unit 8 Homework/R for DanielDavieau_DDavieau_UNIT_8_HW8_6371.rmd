@@ -22,5 +22,6 @@ ggplot(Baseball_Data, aes(x=Payroll, y=Wins)) +
   geom_point()+
   geom_smooth(method=lm)
 
+cor(Baseball_Data$Payroll,Baseball_Data$Wins)
 
 ```
