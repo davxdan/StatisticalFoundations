@@ -1,0 +1,26 @@
+---
+title: "Daniel Davieau Unit 8 Homework 6371"
+author: "Daniel Davieau"
+date: "March 3, 2018"
+output: word_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, tidy=TRUE}
+library(readr)
+Baseball_Data <- read_csv("unit8data/Baseball_Data.csv")
+
+library(ggplot2)
+
+ggplot(Baseball_Data, aes(x=Payroll, y=Wins)) + geom_point()
+
+# Add the regression line
+ggplot(Baseball_Data, aes(x=Payroll, y=Wins)) + 
+  geom_point()+
+  geom_smooth(method=lm)
+
+
+```
