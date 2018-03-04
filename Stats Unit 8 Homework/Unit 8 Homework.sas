@@ -27,5 +27,18 @@ proc sgscatter data = work.DeletedSD;
 plot Wins*Payroll;
 proc corr data= work.DeletedSD;
 
+data cars;                                                                                                                             
+input speed MPG;                                                                                                                     
+datalines;                                                                                                                              
+20 30
+30 28
+40 30
+50 28
+60 24
+;
+proc sgscatter data=cars;
+plot MPG*speed;
+proc corr data= cars;                                                                                                                                   
+   
 
 

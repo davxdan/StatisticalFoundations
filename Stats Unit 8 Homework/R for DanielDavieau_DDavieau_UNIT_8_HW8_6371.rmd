@@ -25,3 +25,7 @@ ggplot(Baseball_Data, aes(x=Payroll, y=Wins)) +
 cor(Baseball_Data$Payroll,Baseball_Data$Wins)
 
 ```
+$Zx=15-14.63=.37$
+$Zy=81-82.5=-1.5$
+$ZxZy=.555$
+
