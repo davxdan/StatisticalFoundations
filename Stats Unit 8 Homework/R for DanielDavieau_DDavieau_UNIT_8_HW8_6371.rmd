@@ -11,9 +11,11 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ```{r, tidy=TRUE}
 library(readr)
-Baseball_Data <- read_csv("unit8data/Baseball_Data.csv")
-
 library(ggplot2)
+setwd("~/GitHub/myfolders/Stats Unit 8 Homework/unit8data")
+Baseball_Data <- read_csv("Baseball_Data.csv")
+DeletedSD_Baseball_Data <- read_csv("DeletedSD_Baseball_Data.csv")
+
 
 ggplot(Baseball_Data, aes(x=Payroll, y=Wins)) + geom_point()
 
@@ -23,5 +25,10 @@ ggplot(Baseball_Data, aes(x=Payroll, y=Wins)) +
   geom_smooth(method=lm)
 
 cor(Baseball_Data$Payroll,Baseball_Data$Wins)
+cor.test(Baseball_Data$Payroll,Baseball_Data$Wins)
+
+cor(DeletedSD_Baseball_Data$Payroll,DeletedSD_Baseball_Data$Wins)
+cor.test(DeletedSD_Baseball_Data$Payroll,DeletedSD_Baseball_Data$Wins)
+
 
 ```
