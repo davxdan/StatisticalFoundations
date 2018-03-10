@@ -32,3 +32,7 @@ cor.test(DeletedSD_Baseball_Data$Payroll,DeletedSD_Baseball_Data$Wins)
 
 
 ```
+$Zx=15-14.63=.37$
+$Zy=81-82.5=-1.5$
+$ZxZy=.555$
+
