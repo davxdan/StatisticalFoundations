@@ -42,3 +42,6 @@ proc reg data= movie;
 model gross = budget / clb;
 run;
 
+proc reg data= movie;
+model gross = budget / cli;
+run;
