@@ -10,5 +10,5 @@ scatter y=Tcell x=Mass;
 run;
 
 proc reg data=work.maledata alpha=.01;
-model Tcell=Mass /R CLB CLI ;
+model Tcell=Mass /R CLB CLI CLM;
 run;
