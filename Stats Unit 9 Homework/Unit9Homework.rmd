@@ -1,0 +1,24 @@
+---
+title: "Unit9Homework"
+author: "Daniel Davieau"
+date: "March 10, 2018"
+output: word_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+science = x
+math = y  
+
+$Yi=.5968*Xi+21.7$
+
+```{r}
+library(readr)
+TEST_DATA <- read_csv("TEST DATA.csv")
+test_data<-lm(math~science,data = TEST_DATA)
+qt(0.995, 198)
+abs(qt(0.01/2, 198))
+summary(test_data)
+confint(test_data, level = .99)
+```
