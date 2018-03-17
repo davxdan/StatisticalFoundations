@@ -7,9 +7,10 @@ output: word_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+rm(list=ls())
 library(readr)
+library(investr)
 Male_Display_Data_Set <- read_csv("~/GitHub/StatisticalFoundations/Stats Unit 10 Homework/Male Display Data Set.csv")
-View(Male_Display_Data_Set)
 ```
 1. Black-eared wheatears are small birds of Spain and Morocco. Males of the species demonstrate an exaggerated sexual display by carrying many heavy stones to nesting cavities. This 35-gram bird transports, on average, 3.1 kg of stones per nesting season! Different males carry somewhat different sized stones, prompting a study of whether larger stones may be a signal of higher health status. M. Soler et al. calculated the average stone mass (g) carried by each of 21 male black-eared wheatears, along with T-cell response measurements (in mm) reflecting their immune system strengths. Analyze the data and write a statistical report (by answering the questions below); treat the T-cell as the response and the stone mass as the explanatory variable. You may assume all criteria for regression and related t-tests are met. You can find the data for this problem on 2DS. (Male Display Data Set)  
 	
@@ -18,23 +19,39 @@ Analyze the data, providing the following:
 
   a. Provide a scatterplot with 99% confidence intervals of the regression line and 99% prediction intervals of the regression line. Please do this in R.  
   
-  ```{r}
-  MaleDisplay.lm=lm(Tcell~Mass, data = Male_Display_Data_Set)
-newx<-Male_Display_Data_Set$Mass
+```{r}
+MaleTest<-lm(Tcell~Mass,data = Male_Display_Data_Set)
+#qt(0.995, 198)
+abs(qt(0.01/2, 198))
+summary(MaleTest)
+confint(MaleTest, level = .99)
+plot(Male_Display_Data_Set$Mass,Male_Display_Data_Set$Tcell)
+#,xlim = c(0,220), ylim = c(0,605),xlab = "Budget",ylab = "Gross", main = "Gross Sales versus Budget"
+plot(Male_Display_Data_Set$Mass)
+```
+```{r}
+movies <- read_csv("~/GitHub/StatisticalFoundations/Stats Unit 10 Homework/MovieData.csv")
+movies
+movies.lm=lm(gross~budget, data = movies)
+newx=movies$budget
 newx=sort(newx)
-prd_c=predict(MaleDisplay.lm, newdata= data.frame(Mass = newx), interval=c("confidence"), type = c("response"), level=0.99) 
-newpoint <- data.frame(Tcell=NA, Mass=95)
-predict(MaleDisplay.lm, newpoint, interval="confidence", level = 0.99)
-prd_p=predict(MAleDisplay.lm, newdata= data.frame(Mass = newx), interval=c("prediction"), type = c("response"), level=0.99) 
-predict(MaleDisplay.lm, newpoint, interval="prediction", level = 0.99)
+prd_c=predict(movies.lm, newdata= data.frame(budget = newx), interval=c("confidence"), type = c("response"), level=0.95) 
+newpoint <- data.frame(gross=NA, budget=95)
+predict(movies.lm, newpoint, interval="confidence", level = 0.95)
+prd_p=predict(movies.lm, newdata= data.frame(budget = newx), interval=c("prediction"), type = c("response"), level=0.95) 
+predict(movies.lm, newpoint, interval="prediction", level = 0.95)
 #Plot with confidence and prediction intervals
-plot(MaleDisplay[,1],MaleDisplay[,2],xlim = c(0,220), ylim = c(0,605),xlab = "Budget",ylab = "Gross", main = "Gross Sales versus Budget")
-abline(MaleDisplay.lm, col = "red")
+library(ggplot2)
+plot(movies[,1],xlim = c(0,220), ylim = c(0,605),xlab = "Budget",ylab = "Gross", main = "Gross Sales versus Budget")
+abline(movies.lm, col = "red")
 lines(newx,prd_c[,2],col = "blue",lty = 2, lwd = 2)
 lines(newx,prd_c[,3],col = "blue", lty = 2, lwd = 2)
 lines(newx,prd_p[,2],col = "green", lty = 2, lwd = 2)
 lines(newx,prd_p[,3],col = "green", lty = 2, lwd = 2)
 ```
+
+
+
 
   b. Provide	a table showing the t-statistics and p-values for the significance of the regression parameters β_(0 ) and β_1 (as different from 0). Please do this in R.  
 
