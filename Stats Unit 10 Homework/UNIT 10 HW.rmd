@@ -10,6 +10,7 @@ knitr::opts_chunk$set(echo = TRUE)
 rm(list=ls())
 library(readr)
 library(investr)
+library(MASS)
 Male_Display_Data_Set <- read_csv("~/GitHub/StatisticalFoundations/Stats Unit 10 Homework/Male Display Data Set.csv")
 ```
 1. Black-eared wheatears are small birds of Spain and Morocco. Males of the species demonstrate an exaggerated sexual display by carrying many heavy stones to nesting cavities. This 35-gram bird transports, on average, 3.1 kg of stones per nesting season! Different males carry somewhat different sized stones, prompting a study of whether larger stones may be a signal of higher health status. M. Soler et al. calculated the average stone mass (g) carried by each of 21 male black-eared wheatears, along with T-cell response measurements (in mm) reflecting their immune system strengths. Analyze the data and write a statistical report (by answering the questions below); treat the T-cell as the response and the stone mass as the explanatory variable. You may assume all criteria for regression and related t-tests are met. You can find the data for this problem on 2DS. (Male Display Data Set)  
@@ -110,18 +111,21 @@ plot(Male_Display_Data_Set$Mass, MaleTest.residuals)
   k. Provide a histogram of residuals with a normal distribution superimposed. It might be helpful to use studentized residuals, rather than regular residuals, with a normal curve overlay. Use R. (You may need to research this, such as googling “histogram with normal curve in R.”)  
 
 ```{r}
-g = MaleTest.residuals
-    m<-mean(g)
-    std<-sqrt(var(g))
-    hist(g, density=20, breaks=20, prob=TRUE, 
-         xlab="Stone Weight Residuals", ylim=c(0, 10), 
-         main="Distribution of Stone Weight Residuals")
-    curve(dnorm(x, mean=m, sd=std), 
-          col="darkblue", lwd=2, add=TRUE, yaxt="n")
-    MaleTest.residuals
+MaleTest.StudentizedResiduals<-studres(MaleTest.lm)
+m<-mean(MaleTest.StudentizedResiduals)
+std<-sqrt(var(MaleTest.StudentizedResiduals))
+hist(MaleTest.StudentizedResiduals, breaks=20, prob=TRUE, 
+xlab="TCell Studentized Residuals",ylab="Distance from 0",xlim = c(-3,3), ylim = c(-0,1), main="Distribution of TCell Studentized Residuals")
+curve(dnorm(x, mean=m, sd=std),
+col="darkblue", lwd=2, add=TRUE, yaxt="n")
+summary(MaleTest.StudentizedResiduals)
 ```
 
   l. Provide a measure of the proportion of variation in the response that is accounted for by the explanatory variable. Interpret this measure. Use R.
+
+```{r}
+summary(MaleTest.lm)$r.squared 
+```
 
 2. Using the data for Black-eared Wheatears, calculate by “hand” (using Excel) the following elements. (An example of much of this was in the PowerPoints and in the videos below.)
 	a. β ̂) an$ β ̂  
