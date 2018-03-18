@@ -28,9 +28,7 @@ NewMass=sort(Male_Display_Data_Set$Mass)
 
 prd_c=predict(MaleTest.lm, newdata= data.frame(Mass = NewMass), interval=c("confidence"), type = c("response"), level=0.99)
 
-newpoint <- data.frame(Tcell=NA, Mass=1)
 prd_p=predict(MaleTest.lm, newdata= data.frame(Mass = NewMass), interval=c("prediction"), type = c("response"), level=0.99) 
-
 
 plot(x=Male_Display_Data_Set$Mass,y=Male_Display_Data_Set$Tcell,xlim = c(3.5,10), ylim = c(-.2,.6),xlab = "Mass",ylab = "Tcells", main = "Tcells vs Mass")
 abline(MaleTest.lm, col = "red")
@@ -57,25 +55,71 @@ confint(MaleTest.lm, level=.99)
 
   f. Interpret the y-intercept in the model (regression equation).  
 
-  g. Find and interpret the 99% confidence interval for the mean t-cell response conditional on a stone mass of 4.5 grams. Please do this directly in R.  
+  g. Find and interpret the 99% confidence interval for the mean t-cell response conditional on a stone mass of 4.5 grams. Please do this directly in R.
+
+```{r}
+newpoint <- data.frame(Tcell=NA, Mass=4.5)
+predict(MaleTest.lm, newpoint, interval="confidence", level = 0.99)
+
+```
 
   h. Find and interpret the 99% prediction interval for the predicted t-cell response given a stone mass of 4.5 grams. Please do this directly in R.  
+```{r}
+newpoint <- data.frame(Tcell=NA, Mass=4.5)
+predict(MaleTest.lm, newpoint, interval="prediction", level = 0.99)
+```
 
   i. Calibration intervals:  
     1. Using the graphical method (using your best judgment using the graphs from part (a)), find the following using R, as part (a) was done in R.  
         a. 99% calibration interval for the mean t-cell response of 0.3.  
+
+```{r}
+plot(x=Male_Display_Data_Set$Mass,y=Male_Display_Data_Set$Tcell,xlim = c(-5,15), ylim = c(-.2,.6),xlab = "Mass",ylab = "Tcells", main = "Tcells vs Mass")
+abline(MaleTest.lm, col = "red")
+lines(NewMass,prd_c[,2],col = "blue",lty = 2, lwd = 1)
+lines(NewMass,prd_c[,3],col = "blue",lty = 2, lwd = 1)
+lines(NewMass,prd_p[,2],col = "orange",lty = 2, lwd = 1)
+lines(NewMass,prd_p[,3],col = "orange",lty = 2, lwd = 1)
+```
         b. 99% calibration interval for a single t-cell response of 0.3.  
   
     2. Using software directly, find the following using R, as SAS does not provide calibration intervals directly. (R: package investr)  
         a. 99% calibration interval for the mean t-cell response of 0.3.  
+
+```{r}
+calibrate(MaleTest.lm, y0 = .3, interval = "inversion",mean.response = TRUE, level = .99)
+```
+
         b. 99% calibration interval for a single t-cell response of 0.3.  
+
+```{r}
+calibrate(MaleTest.lm, y0 = .3, interval = "inversion", level = .99)
+```
+
     3. Interpret the following using the results from (1) and (2) above.  
         a. 99% calibration interval for the mean t-cell response of 0.3.
         b. 99% calibration interval for a single t-cell response of 0.3.  
     
   j. Provide a scatterplot of residuals. Please do this in R.
 
+```{r}
+MaleTest.residuals<- resid(MaleTest.lm)
+plot(Male_Display_Data_Set$Mass, MaleTest.residuals)
+```
+
   k. Provide a histogram of residuals with a normal distribution superimposed. It might be helpful to use studentized residuals, rather than regular residuals, with a normal curve overlay. Use R. (You may need to research this, such as googling “histogram with normal curve in R.”)  
+
+```{r}
+g = MaleTest.residuals
+    m<-mean(g)
+    std<-sqrt(var(g))
+    hist(g, density=20, breaks=20, prob=TRUE, 
+         xlab="Stone Weight Residuals", ylim=c(0, 10), 
+         main="Distribution of Stone Weight Residuals")
+    curve(dnorm(x, mean=m, sd=std), 
+          col="darkblue", lwd=2, add=TRUE, yaxt="n")
+    MaleTest.residuals
+```
 
   l. Provide a measure of the proportion of variation in the response that is accounted for by the explanatory variable. Interpret this measure. Use R.
 
