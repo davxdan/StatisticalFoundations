@@ -21,11 +21,9 @@ Analyze the data, providing the following:
   
 ```{r}
 MaleTest.lm<-lm(Tcell~Mass,data = Male_Display_Data_Set)
-#summary(MaleTest.lm)
 #qt(0.995, 198)
 #abs(qt(0.01/2, 198))
-#summary(MaleTest)
-#confint(MaleTest, level = .99)
+#confint(MaleTest.lm, level = .99)
 NewMass=sort(Male_Display_Data_Set$Mass)
 
 prd_c=predict(MaleTest.lm, newdata= data.frame(Mass = NewMass), interval=c("confidence"), type = c("response"), level=0.99)
@@ -41,33 +39,17 @@ lines(NewMass,prd_c[,3],col = "blue",lty = 2, lwd = 1)
 lines(NewMass,prd_p[,2],col = "orange",lty = 2, lwd = 1)
 lines(NewMass,prd_p[,3],col = "orange",lty = 2, lwd = 1)
 ```
+  b. Provide	a table showing the t-statistics and p-values for the significance of the regression parameters β_(0 ) and β_1 (as different from 0). Please do this in R.  
 ```{r}
-movies <- read_csv("~/GitHub/StatisticalFoundations/Stats Unit 10 Homework/MovieData.csv")
+summary(MaleTest.lm)
+```
+  c. Using the output in (b), show all 6 steps of each hypothesis test. (That’s one test for β_(0 )=0 and one test for β_1=0.) Find critical values in R. Your conclusion should include a confidence interval. Use alpha = 0.01.  
 
-movies.lm=lm(gross~budget, data = movies)
-summary(movies.lm)
-newx=movies$budget
-newx=sort(newx)
-prd_c=predict(movies.lm, newdata= data.frame(budget = newx), interval=c("confidence"), type = c("response"), level=0.95) 
-newpoint <- data.frame(gross=NA, budget=95)
-predict(movies.lm, newpoint, interval="confidence", level = 0.95)
-prd_p=predict(movies.lm, newdata= data.frame(budget = newx), interval=c("prediction"), type = c("response"), level=0.95) 
-predict(movies.lm, newpoint, interval="prediction", level = 0.95)
-#Plot with confidence and prediction intervals
-plot(movies[,1],xlim = c(0,220), ylim = c(0,605),xlab = "Budget",ylab = "Gross", main = "Gross Sales versus Budget")
-abline(movies.lm, col = "red")
-lines(newx,prd_c[,2],col = "blue",lty = 2, lwd = 2)
-lines(newx,prd_c[,3],col = "blue", lty = 2, lwd = 2)
-lines(newx,prd_p[,2],col = "green", lty = 2, lwd = 2)
-lines(newx,prd_p[,3],col = "green", lty = 2, lwd = 2)
+```{r}
+qt(0.995, 19)
+confint(MaleTest.lm, level=.99)
 ```
 
-
-
-
-  b. Provide	a table showing the t-statistics and p-values for the significance of the regression parameters β_(0 ) and β_1 (as different from 0). Please do this in R.  
-
-  c. Using the output in (b), show all 6 steps of each hypothesis test. (That’s one test for β_(0 )=0 and one test for β_1=0.) Find critical values in R. Your conclusion should include a confidence interval. Use alpha = 0.01.  
 
   d. State the regression equation. Be careful to use the mean Tcell or predicted Tcell, rather than just Tcell.  
 
