@@ -23,15 +23,32 @@ datalines;
 9.42 0.508
 9.95 0.411
 4.5  .
+3	 .
+4	 .
+5	 .
+6	 .
+7	 .
+8	 .
+9	 .
 ;
 
 proc SGPLOT data=work.maledata;
 scatter y=Tcell x=Mass;
 run;
 
+
 proc reg data=work.maledata alpha=.01;
 model Tcell=Mass /R CLB CLI CLM;
 run;
+
+proc reg data=work.maledata alpha=.01;
+model Tcell=Mass /R;
+
+run;
+
+data quantile;
+	myquant=quantile('t', 0.995, 19);
+proc print data=quantile;
 
 /* Prediction Mean 4.5 */
 proc reg data=work.maledata alpha=.01;
