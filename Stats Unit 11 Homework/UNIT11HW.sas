@@ -28,6 +28,8 @@ data mdmetablmass34l;
 set md;
 metabl = log(metab);
 mass34l = log(mass34);
+proc reg data=work.mdmetablmass34l alpha=.05 plots=all;
+model metabl = mass34l /cli;
 
 
 
