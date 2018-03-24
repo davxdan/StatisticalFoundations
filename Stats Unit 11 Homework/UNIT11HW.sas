@@ -1,3 +1,37 @@
+/* import the data */
+%web_drop_table(WORK.M);
+FILENAME REFFILE '/folders/myshortcuts/StatisticalFoundations/Stats Unit 11 Homework/Metabolism Data Prob 26.csv';
+PROC IMPORT DATAFILE=REFFILE
+	DBMS=CSV
+	OUT=WORK.M;
+	GETNAMES=YES;
+PROC CONTENTS DATA=WORK.M; RUN;
+
+/* raise mass to power .75 */
+data md;
+set m;
+mass34 = mass**.75;
+
+
+proc reg data=work.md alpha=.05 plots=all;
+model metab = mass34 /cli;
+
+/* transform log(y) */
+data mdmetabl;
+set md;
+metabl = log(metab);
+proc reg data=work.mdmetabl alpha=.05 plots=all;
+model metabl = mass34 /cli;
+
+/* transform both y amd x (log) */
+data mdmetablmass34l;
+set md;
+metabl = log(metab);
+mass34l = log(mass34);
+
+
+
+
 /* data election;                                                                                                                           */
 /* input buchanan bush;                                                                                                                     */
 /* datalines;                                                                                                                               */
@@ -75,20 +109,9 @@
 
 
 
-/* import the data */
-%web_drop_table(WORK.M);
-FILENAME REFFILE '/folders/myshortcuts/StatisticalFoundations/Stats Unit 11 Homework/Metabolism Data Prob 26.csv';
-PROC IMPORT DATAFILE=REFFILE
-	DBMS=CSV
-	OUT=WORK.M;
-	GETNAMES=YES;
-PROC CONTENTS DATA=WORK.M; RUN;
-
-/* raise mass to power .75 */
-data md;
-set m;
-mass34 = mass**.75;
 
 
-proc reg data=work.md plots=all;
-model metab = mass34 /cli;
+
+
+
+
