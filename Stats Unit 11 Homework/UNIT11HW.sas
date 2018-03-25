@@ -31,8 +31,27 @@ mass34l = log(mass34);
 proc reg data=work.mdmetablmass34l alpha=.05 plots=all;
 model metabl = mass34l /cli;
 
+/* Generated Code (IMPORT) */
+/* Source File: Autism Data Prob 29.csv */
+/* Source Path: /folders/myshortcuts/StatisticalFoundations/Stats Unit 11 Homework */
+/* Code generated on: 3/25/18, 10:17 AM */
 
+%web_drop_table(WORK.A);
+FILENAME REFFILE '/folders/myshortcuts/StatisticalFoundations/Stats Unit 11 Homework/Autism Data Prob 29.csv';
+PROC IMPORT DATAFILE=REFFILE
+	DBMS=CSV
+	OUT=WORK.A;
+	GETNAMES=YES;
 
+proc reg data=work.a alpha=.05 plots=all;
+model Prevalence = Year /cli;
+
+data squrtx;
+set a;
+sqx = sqrt(Year);
+
+proc reg data=work.squrtx alpha=.05 plots=all;
+model Prevalence = sqx /cli;
 
 /* data election;                                                                                                                           */
 /* input buchanan bush;                                                                                                                     */
