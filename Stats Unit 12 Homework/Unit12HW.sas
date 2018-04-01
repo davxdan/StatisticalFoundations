@@ -6,11 +6,14 @@ PROC IMPORT DATAFILE=REFFILE
 	GETNAMES=YES;
 
 proc sgplot data=work.crabsraw;
-scatter x=Force y=Height / group=Species;
-ellipse x=Force y=Height;
+scatter x=Height y=Force / group=Species;
+ellipse x=Height y=Force;
 
 proc sgplot data=work.crabsraw;
-reg x=Force y=Height / group=Species CLM CLI;
+reg x=Height y=Force  / alpha = .05 group=Species CLM CLI;
+
+proc sgplot data=work.crabsraw;
+reg x=Height y=Force  / alpha = .05 group=Species CLM;
 
 proc sgscatter data=work.crabsraw;
 matrix Force Height / group=Species;
