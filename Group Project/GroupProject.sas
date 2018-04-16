@@ -66,11 +66,10 @@ logSalePrice = log(SalePrice);
 if LotArea > 100000 then delete;
 if GrLivArea = 5642 then delete;
 
-/* Run again with log saleprice and extreme outliers removed. Also removed _1stFlrSF and TotRmsAbvGrd since because they have extreme outliers and high VIF colinearity with GrLivArea anyway. Keep GrLiveArea because it has lowest variance*/
-/* Cooks D looking much better. Noted tha there are some variables such as BsmtFinSF have high VIF. These probably need to be categorized since not all homes will have finished basements  */
+/* Run again with log saleprice and extreme outliers removed. Cooks D and Studentized residuals are looking better*/
 proc reg data=Q2;
-model logSalePrice = LotArea YearBuilt YearRemodAdd MasVnrArea BsmtFinSF1 BsmtFinSF2 BsmtUnfSF TotalBsmtSF  _2ndFlrSF LowQualFinSF
- GrLivArea  GarageYrBlt GarageArea WoodDeckSF OpenPorchSF EnclosedPorch _3SsnPorch ScreenPorch PoolArea MiscVal / selection=cp VIF;
+model logSalePrice = LotArea YearBuilt YearRemodAdd MasVnrArea BsmtFinSF1 BsmtFinSF2 BsmtUnfSF TotalBsmtSF _1stFlrSF _2ndFlrSF LowQualFinSF
+ GrLivArea TotRmsAbvGrd GarageYrBlt GarageArea WoodDeckSF OpenPorchSF EnclosedPorch _3SsnPorch ScreenPorch PoolArea MiscVal /VIF;
 
 
 
@@ -84,7 +83,7 @@ model logSalePrice = LotArea YearBuilt YearRemodAdd MasVnrArea BsmtFinSF1 BsmtFi
 proc glmselect data =Q2;
 model logSalePrice = LotArea YearBuilt YearRemodAdd MasVnrArea BsmtFinSF1 BsmtFinSF2 BsmtUnfSF TotalBsmtSF  _2ndFlrSF LowQualFinSF 
 GrLivArea  GarageYrBlt GarageArea WoodDeckSF OpenPorchSF EnclosedPorch _3SsnPorch ScreenPorch PoolArea MiscVal
-/selection =Forward (stop=CV) cvmethod=random(5) stats=adjrsq; 
+/selection =Forward (stop=CV) stats=adjrsq; 
 
 /* Backward */
 proc glmselect data =q2;
@@ -102,6 +101,15 @@ GrLivArea  GarageYrBlt GarageArea WoodDeckSF OpenPorchSF EnclosedPorch _3SsnPorc
 
 
 /* Maybe save for custom model */
+/* Run again with log saleprice and extreme outliers removed. Also removed _1stFlrSF and TotRmsAbvGrd since because they have extreme outliers and high VIF colinearity with GrLivArea anyway. Keep GrLiveArea because it has lowest variance*/
+/* Cooks D looking much better. Noted tha there are some variables such as BsmtFinSF have high VIF. These probably need to be categorized since not all homes will have finished basements  */
+proc reg data=Q2;
+model logSalePrice = LotArea YearBuilt YearRemodAdd MasVnrArea BsmtFinSF1 BsmtFinSF2 BsmtUnfSF TotalBsmtSF  _2ndFlrSF LowQualFinSF
+ GrLivArea  GarageYrBlt GarageArea WoodDeckSF OpenPorchSF EnclosedPorch _3SsnPorch ScreenPorch PoolArea MiscVal / selection=cp VIF;
+
+
+
+
 proc univariate data=work.import; /*reveals more categorical variables. For example some homes have no BsmtFinSF1 while others do so I am ignoring these for now*/
 QQPLOT LotArea YearBuilt YearRemodAdd MasVnrArea BsmtFinSF1 BsmtFinSF2 BsmtUnfSF TotalBsmtSF _1stFlrSF _2ndFlrSF LowQualFinSF GrLivArea TotRmsAbvGrd GarageYrBlt GarageArea WoodDeckSF OpenPorchSF EnclosedPorch _3SsnPorch ScreenPorch PoolArea MiscVal SalePrice; 
 
