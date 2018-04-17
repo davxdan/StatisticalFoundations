@@ -1,103 +1,128 @@
 /* Import the train data */
 /* SAS Encountered errors with MasVnrArea and GarageYrBlt due to "NA" in Numeric Fields. SAS set the "NA" values to "." Therefore no issues for now */
-%web_drop_table(WORK.IMPORT);
+%web_drop_table(WORK.TRAIN);
 FILENAME REFFILE '/folders/myshortcuts/StatisticalFoundations/Group Project/train.csv';
 PROC IMPORT DATAFILE=REFFILE
 	DBMS=CSV
-	OUT=WORK.IMPORT;
+	OUT=WORK.TRAIN;
 	GETNAMES=YES;
 RUN;
-PROC CONTENTS DATA=WORK.IMPORT; RUN;
-%web_open_table(WORK.IMPORT);
-
-
-
-/* Import the test data */
-%web_drop_table(WORK.IMPORT1);
-FILENAME REFFILE '/folders/myshortcuts/StatisticalFoundations/Group Project/test.csv';
-PROC IMPORT DATAFILE=REFFILE
-	DBMS=CSV
-	OUT=WORK.IMPORT1;
-	GETNAMES=YES;
-RUN;
-PROC CONTENTS DATA=WORK.IMPORT1; RUN;
-%web_open_table(WORK.IMPORT1);
-
-/* Add Saleprice column to test data */
-data Q2test; 
-set work.import1; 
-SalePrice = .;
-run;
-
-/* Combine the train and test data */
-data Q2;
-set  work.import work.q2test;
-run;
+PROC CONTENTS DATA=WORK.TRAIN; RUN;
+%web_open_table(WORK.TRAIN);
 
 /* Analysis Question 2 */
-/* Check for normality in non-categorical variables*/
-/* proc sgscatter data=work.import; /*Too many variables to really make sense of the graphics but it works */
-/* matrix LotArea YearBuilt YearRemodAdd MasVnrArea BsmtFinSF1 BsmtFinSF2 BsmtUnfSF TotalBsmtSF _1stFlrSF _2ndFlrSF LowQualFinSF GrLivArea TotRmsAbvGrd GarageYrBlt GarageArea WoodDeckSF OpenPorchSF EnclosedPorch _3SsnPorch ScreenPorch PoolArea MiscVal SalePrice; */
 
-/* Run with all variables just like Dr.MGee */
-proc reg data=Q2;
-model SalePrice = LotArea YearBuilt YearRemodAdd MasVnrArea BsmtFinSF1 BsmtFinSF2 BsmtUnfSF TotalBsmtSF _1stFlrSF _2ndFlrSF LowQualFinSF
- GrLivArea TotRmsAbvGrd GarageYrBlt GarageArea WoodDeckSF OpenPorchSF EnclosedPorch _3SsnPorch ScreenPorch PoolArea MiscVal /VIF;
+/* Assumptions */
+	/* Check for normality in non-categorical variables*/
+	/* proc sgscatter data=work.import; /*Too many variables to really make sense of the graphics but it works */
+	/* matrix LotArea YearBuilt YearRemodAdd MasVnrArea BsmtFinSF1 BsmtFinSF2 BsmtUnfSF TotalBsmtSF _1stFlrSF _2ndFlrSF LowQualFinSF GrLivArea TotRmsAbvGrd GarageYrBlt GarageArea WoodDeckSF OpenPorchSF EnclosedPorch _3SsnPorch ScreenPorch PoolArea MiscVal SalePrice; */
+	
+	/* 	proc glm since categorical variables */
+	proc glm data=Q2TRAIN plots=all;
+	class MSZoning Street Alley LotShape LandContour Utilities LotConfig LandSlope Neighborhood Condition1 Condition2 BldgType HouseStyle RoofStyle RoofMatl Exterior1st Exterior2nd MasVnrType ExterQual ExterCond Foundation BsmtQual BsmtCond BsmtExposure BsmtFinType1 BsmtFinType2
+	Heating HeatingQC CentralAir Electrical KitchenQual Functional FireplaceQu GarageType GarageFinish GarageQual GarageCond PavedDrive PoolQC Fence MiscFeature SaleType SaleCondition;
+	model logSalePrice = MSZoning BldgType LotArea YearBuilt YearRemodAdd MasVnrArea BsmtFinSF1 BsmtFinSF2 BsmtUnfSF TotalBsmtSF _1stFlrSF _2ndFlrSF LowQualFinSF
+	 GrLivArea TotRmsAbvGrd GarageYrBlt GarageArea WoodDeckSF OpenPorchSF EnclosedPorch _3SsnPorch ScreenPorch PoolArea MiscVal;
 
-/*Big outliers so Look at saleprice alone */
-proc univariate data= work.Q2;
-QQPLOT SalePrice;
-HIST SalePrice;
+	/* Run with all non-categorical variables just like Dr.MGee to check VIF*/
+	proc reg data=WORK.TRAIN;
+	model SalePrice = LotArea YearBuilt YearRemodAdd MasVnrArea BsmtFinSF1 BsmtFinSF2 BsmtUnfSF TotalBsmtSF _1stFlrSF _2ndFlrSF LowQualFinSF
+	 GrLivArea TotRmsAbvGrd GarageYrBlt GarageArea WoodDeckSF OpenPorchSF EnclosedPorch _3SsnPorch ScreenPorch PoolArea MiscVal /VIF;
+	
+	/*Big outliers so Look at saleprice alone */
+	proc univariate data= WORK.TRAIN;
+	QQPLOT SalePrice;
+	HIST SalePrice;
+	
+	/* Correct Skew in Saleprice (log) looking much more normal and consistent with what stacy did for Q1*/
+	data Q2TRAIN; 
+	set WORK.TRAIN; 
+	logSalePrice = log(SalePrice);
+	run;
+	
+	/* Run with all variables again with logsaleprice. Categorical Variables dont work with Proc Reg */
+	proc reg data=Q2TRAIN;
+	model logSalePrice = MSZoning CatMSZoning LotArea YearBuilt YearRemodAdd MasVnrArea BsmtFinSF1 BsmtFinSF2 BsmtUnfSF TotalBsmtSF _1stFlrSF _2ndFlrSF LowQualFinSF
+	 GrLivArea TotRmsAbvGrd GarageYrBlt GarageArea WoodDeckSF OpenPorchSF EnclosedPorch _3SsnPorch ScreenPorch PoolArea MiscVal /VIF;
+		
+	/* remove extreme outliers */
+	data Q2TRAIN; 
+	set Q2TRAIN; 
+	logSalePrice = log(SalePrice);
+	if LotArea > 100000 then delete;
+	if GrLivArea = 5642 then delete;
+	
+	/* Run again with log saleprice and extreme outliers removed. Cooks D and Studentized residuals are looking better*/
+	proc reg data=Q2TRAIN;
+	model logSalePrice = LotArea YearBuilt YearRemodAdd MasVnrArea BsmtFinSF1 BsmtFinSF2 BsmtUnfSF TotalBsmtSF _1stFlrSF _2ndFlrSF LowQualFinSF
+	 GrLivArea TotRmsAbvGrd GarageYrBlt GarageArea WoodDeckSF OpenPorchSF EnclosedPorch _3SsnPorch ScreenPorch PoolArea MiscVal /VIF;
 
-/* Correct Skew in Saleprice (log) looking much more normal and consistent with what stacy did for Q1*/
-data Q2; 
-set Q2; 
-logSalePrice = log(SalePrice);
 
-/* Run with all variables again with logsaleprice */
-proc reg data=Q2;
-model logSalePrice = LotArea YearBuilt YearRemodAdd MasVnrArea BsmtFinSF1 BsmtFinSF2 BsmtUnfSF TotalBsmtSF _1stFlrSF _2ndFlrSF LowQualFinSF
- GrLivArea TotRmsAbvGrd GarageYrBlt GarageArea WoodDeckSF OpenPorchSF EnclosedPorch _3SsnPorch ScreenPorch PoolArea MiscVal /VIF;
+/* Variable Selection Models */
+	/* Looking for Large R^2 and small CV Press */
+	/* Forward */
+	proc glmselect data =Q2TRAIN;
+	model logSalePrice = LotArea YearBuilt YearRemodAdd MasVnrArea BsmtFinSF1 BsmtFinSF2 BsmtUnfSF TotalBsmtSF  _2ndFlrSF LowQualFinSF 
+	GrLivArea  GarageYrBlt GarageArea WoodDeckSF OpenPorchSF EnclosedPorch _3SsnPorch ScreenPorch PoolArea MiscVal
+	/selection =Forward (stop=CV) cvmethod=random(5) stats=adjrsq; 
+	
+	/* Backward */
+	proc glmselect data =Q2TRAIN;
+	model logSalePrice = LotArea YearBuilt YearRemodAdd MasVnrArea BsmtFinSF1 BsmtFinSF2 BsmtUnfSF TotalBsmtSF  _2ndFlrSF LowQualFinSF 
+	GrLivArea  GarageYrBlt GarageArea WoodDeckSF OpenPorchSF EnclosedPorch _3SsnPorch ScreenPorch PoolArea MiscVal
+	/selection =backward (stop=CV) cvmethod=random(5) stats=adjrsq;
+	
+	/* Stepwise */
+	proc glmselect data =Q2TRAIN;
+	model logSalePrice = LotArea YearBuilt YearRemodAdd MasVnrArea BsmtFinSF1 BsmtFinSF2 BsmtUnfSF TotalBsmtSF  _2ndFlrSF LowQualFinSF 
+	GrLivArea  GarageYrBlt GarageArea WoodDeckSF OpenPorchSF EnclosedPorch _3SsnPorch ScreenPorch PoolArea MiscVal
+	/selection =stepwise (stop=CV)  cvmethod=random(5) stats=adjrsq;
+	
+	
 
-/* remove extreme outliers */
-data Q2; 
-set work.Q2; 
-logSalePrice = log(SalePrice);
-if LotArea > 100000 then delete;
-if GrLivArea = 5642 then delete;
-
-/* Run again with log saleprice and extreme outliers removed. Cooks D and Studentized residuals are looking better*/
-proc reg data=Q2;
-model logSalePrice = LotArea YearBuilt YearRemodAdd MasVnrArea BsmtFinSF1 BsmtFinSF2 BsmtUnfSF TotalBsmtSF _1stFlrSF _2ndFlrSF LowQualFinSF
- GrLivArea TotRmsAbvGrd GarageYrBlt GarageArea WoodDeckSF OpenPorchSF EnclosedPorch _3SsnPorch ScreenPorch PoolArea MiscVal /VIF;
+	/* proc glmselect data=work.import testdata=work.Q2test plots(stepaxis = number) = (criterionpanel ASEPlot); */
+	/* model SalePrice = LotArea YearBuilt YearRemodAdd MasVnrArea BsmtFinSF1 BsmtFinSF2 BsmtUnfSF TotalBsmtSF _1stFlrSF _2ndFlrSF LowQualFinSF */
+	/*  GrLivArea TotRmsAbvGrd GarageYrBlt GarageArea WoodDeckSF OpenPorchSF EnclosedPorch _3SsnPorch ScreenPorch PoolArea MiscVal / */
+	/*  selection=stepwise(select = sl stop = sl slentry = .15 sls = .15); */
 
 
 
+/* Prediction */
+	/* Import the test data */
+	%web_drop_table(WORK.IMPORT1);
+	FILENAME REFFILE '/folders/myshortcuts/StatisticalFoundations/Group Project/test.csv';
+	PROC IMPORT DATAFILE=REFFILE
+		DBMS=CSV
+		OUT=WORK.IMPORT1;
+		GETNAMES=YES;
+	RUN;
+	PROC CONTENTS DATA=WORK.IMPORT1; RUN;
+	%web_open_table(WORK.IMPORT1);
+	
+	/* Add Saleprice column to test data */
+	data Q2test; 
+	set work.import1; 
+	SalePrice = .;
+	run;
+	
+	/* Combine the train and test data */
+	data Q2;
+	set  work.import work.q2test;
+	run;
+
+	/* Remember to Check diagnostics */
+	proc glm data = q2 plots=all;
+	model logSalePrice = LotArea YearBuilt YearRemodAdd MasVnrArea BsmtFinSF1 BsmtFinSF2 BsmtUnfSF TotalBsmtSF  _2ndFlrSF LowQualFinSF 
+	GrLivArea  GarageYrBlt GarageArea WoodDeckSF OpenPorchSF EnclosedPorch _3SsnPorch ScreenPorch PoolArea MiscVal /cli;
+	output out = results p = Predict;
+	run;
+	
+	proc print data=work.results;
 
 
 
 
-/* Models */
-/* Looking for Large R^2 and small CV Press */
-/* Forward */
-proc glmselect data =Q2;
-model logSalePrice = LotArea YearBuilt YearRemodAdd MasVnrArea BsmtFinSF1 BsmtFinSF2 BsmtUnfSF TotalBsmtSF  _2ndFlrSF LowQualFinSF 
-GrLivArea  GarageYrBlt GarageArea WoodDeckSF OpenPorchSF EnclosedPorch _3SsnPorch ScreenPorch PoolArea MiscVal
-/selection =Forward (stop=CV) stats=adjrsq; 
 
-/* Backward */
-proc glmselect data =q2;
-model logSalePrice = LotArea YearBuilt YearRemodAdd MasVnrArea BsmtFinSF1 BsmtFinSF2 BsmtUnfSF TotalBsmtSF  _2ndFlrSF LowQualFinSF 
-GrLivArea  GarageYrBlt GarageArea WoodDeckSF OpenPorchSF EnclosedPorch _3SsnPorch ScreenPorch PoolArea MiscVal
-/selection =backward (stop=CV) cvmethod=random(5) stats=adjrsq;
-
-/* Stepwise */
-proc glmselect data =q2;
-model logSalePrice = LotArea YearBuilt YearRemodAdd MasVnrArea BsmtFinSF1 BsmtFinSF2 BsmtUnfSF TotalBsmtSF  _2ndFlrSF LowQualFinSF 
-GrLivArea  GarageYrBlt GarageArea WoodDeckSF OpenPorchSF EnclosedPorch _3SsnPorch ScreenPorch PoolArea MiscVal
-/selection =stepwise (stop=CV) cvmethod=random(5) stats=adjrsq;
-
-/* Check diagnostics */
 
 
 /* Maybe save for custom model */
