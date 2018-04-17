@@ -12,73 +12,97 @@ PROC CONTENTS DATA=WORK.TRAIN; RUN;
 
 /* Analysis Question 2 */
 
-/* Assumptions */
-	/* Check for normality in non-categorical variables*/
-	/* proc sgscatter data=work.import; /*Too many variables to really make sense of the graphics but it works */
-	/* matrix LotArea YearBuilt YearRemodAdd MasVnrArea BsmtFinSF1 BsmtFinSF2 BsmtUnfSF TotalBsmtSF _1stFlrSF _2ndFlrSF LowQualFinSF GrLivArea TotRmsAbvGrd GarageYrBlt GarageArea WoodDeckSF OpenPorchSF EnclosedPorch _3SsnPorch ScreenPorch PoolArea MiscVal SalePrice; */
-	
-	/* 	proc glm since categorical variables */
-	proc glm data=Q2TRAIN plots=all;
-	class MSZoning Street Alley LotShape LandContour Utilities LotConfig LandSlope Neighborhood Condition1 Condition2 BldgType HouseStyle RoofStyle RoofMatl Exterior1st Exterior2nd MasVnrType ExterQual ExterCond Foundation BsmtQual BsmtCond BsmtExposure BsmtFinType1 BsmtFinType2
-	Heating HeatingQC CentralAir Electrical KitchenQual Functional FireplaceQu GarageType GarageFinish GarageQual GarageCond PavedDrive PoolQC Fence MiscFeature SaleType SaleCondition;
-	model logSalePrice = MSZoning BldgType LotArea YearBuilt YearRemodAdd MasVnrArea BsmtFinSF1 BsmtFinSF2 BsmtUnfSF TotalBsmtSF _1stFlrSF _2ndFlrSF LowQualFinSF
-	 GrLivArea TotRmsAbvGrd GarageYrBlt GarageArea WoodDeckSF OpenPorchSF EnclosedPorch _3SsnPorch ScreenPorch PoolArea MiscVal;
-
-	/* Run with all non-categorical variables just like Dr.MGee to check VIF*/
-	proc reg data=WORK.TRAIN;
-	model SalePrice = LotArea YearBuilt YearRemodAdd MasVnrArea BsmtFinSF1 BsmtFinSF2 BsmtUnfSF TotalBsmtSF _1stFlrSF _2ndFlrSF LowQualFinSF
-	 GrLivArea TotRmsAbvGrd GarageYrBlt GarageArea WoodDeckSF OpenPorchSF EnclosedPorch _3SsnPorch ScreenPorch PoolArea MiscVal /VIF;
-	
-	/*Big outliers so Look at saleprice alone */
-	proc univariate data= WORK.TRAIN;
-	QQPLOT SalePrice;
-	HIST SalePrice;
-	
 	/* Correct Skew in Saleprice (log) looking much more normal and consistent with what stacy did for Q1*/
 	data Q2TRAIN; 
 	set WORK.TRAIN; 
 	logSalePrice = log(SalePrice);
 	run;
-	
-	/* Run with all variables again with logsaleprice. Categorical Variables dont work with Proc Reg */
-	proc reg data=Q2TRAIN;
-	model logSalePrice = MSZoning CatMSZoning LotArea YearBuilt YearRemodAdd MasVnrArea BsmtFinSF1 BsmtFinSF2 BsmtUnfSF TotalBsmtSF _1stFlrSF _2ndFlrSF LowQualFinSF
-	 GrLivArea TotRmsAbvGrd GarageYrBlt GarageArea WoodDeckSF OpenPorchSF EnclosedPorch _3SsnPorch ScreenPorch PoolArea MiscVal /VIF;
-		
-	/* remove extreme outliers */
-	data Q2TRAIN; 
-	set Q2TRAIN; 
-	logSalePrice = log(SalePrice);
-	if LotArea > 100000 then delete;
-	if GrLivArea = 5642 then delete;
-	
-	/* Run again with log saleprice and extreme outliers removed. Cooks D and Studentized residuals are looking better*/
-	proc reg data=Q2TRAIN;
-	model logSalePrice = LotArea YearBuilt YearRemodAdd MasVnrArea BsmtFinSF1 BsmtFinSF2 BsmtUnfSF TotalBsmtSF _1stFlrSF _2ndFlrSF LowQualFinSF
-	 GrLivArea TotRmsAbvGrd GarageYrBlt GarageArea WoodDeckSF OpenPorchSF EnclosedPorch _3SsnPorch ScreenPorch PoolArea MiscVal /VIF;
-
 
 /* Variable Selection Models */
 	/* Looking for Large R^2 and small CV Press */
 	/* Forward */
-	proc glmselect data =Q2TRAIN;
-	model logSalePrice = LotArea YearBuilt YearRemodAdd MasVnrArea BsmtFinSF1 BsmtFinSF2 BsmtUnfSF TotalBsmtSF  _2ndFlrSF LowQualFinSF 
-	GrLivArea  GarageYrBlt GarageArea WoodDeckSF OpenPorchSF EnclosedPorch _3SsnPorch ScreenPorch PoolArea MiscVal
+	proc glmselect data =Q2TRAIN plots=all;
+	class MSZoning Street Alley LotShape LandContour Utilities LotConfig LandSlope Neighborhood Condition1 Condition2 BldgType HouseStyle RoofStyle RoofMatl Exterior1st Exterior2nd MasVnrType ExterQual ExterCond Foundation BsmtQual BsmtCond BsmtExposure BsmtFinType1 BsmtFinType2
+	Heating HeatingQC CentralAir Electrical KitchenQual Functional FireplaceQu GarageType GarageFinish GarageQual GarageCond PavedDrive PoolQC Fence MiscFeature SaleType SaleCondition;
+	model logSalePrice = MSSubClass MSZoning LotArea Street Alley LotShape LandContour Utilities LotConfig LandSlope Neighborhood Condition1 Condition2 BldgType HouseStyle OverallQual
+	OverallCond YearBuilt YearRemodAdd RoofStyle RoofMatl Exterior1st Exterior2nd MasVnrType MasVnrArea ExterQual ExterCond Foundation BsmtQual BsmtCond BsmtExposure BsmtFinType1 BsmtFinSF1 
+	BsmtFinType2 BsmtFinSF2 BsmtUnfSF TotalBsmtSF Heating HeatingQC CentralAir Electrical _1stFlrSF _2ndFlrSF LowQualFinSF GrLivArea BsmtFullBath BsmtHalfBath FullBath HalfBath BedroomAbvGr 
+	KitchenAbvGr KitchenQual TotRmsAbvGrd Functional Fireplaces FireplaceQu GarageType GarageYrBlt GarageFinish GarageCars GarageArea GarageQual GarageCond PavedDrive WoodDeckSF OpenPorchSF 
+	EnclosedPorch _3SsnPorch ScreenPorch PoolArea PoolQC Fence MiscFeature MiscVal MoSold YrSold SaleType SaleCondition
 	/selection =Forward (stop=CV) cvmethod=random(5) stats=adjrsq; 
 	
 	/* Backward */
-	proc glmselect data =Q2TRAIN;
-	model logSalePrice = LotArea YearBuilt YearRemodAdd MasVnrArea BsmtFinSF1 BsmtFinSF2 BsmtUnfSF TotalBsmtSF  _2ndFlrSF LowQualFinSF 
-	GrLivArea  GarageYrBlt GarageArea WoodDeckSF OpenPorchSF EnclosedPorch _3SsnPorch ScreenPorch PoolArea MiscVal
+	proc glmselect data =Q2TRAIN plots=all;
+	class MSZoning Street Alley LotShape LandContour Utilities LotConfig LandSlope Neighborhood Condition1 Condition2 BldgType HouseStyle RoofStyle RoofMatl Exterior1st Exterior2nd MasVnrType ExterQual ExterCond Foundation BsmtQual BsmtCond BsmtExposure BsmtFinType1 BsmtFinType2
+	Heating HeatingQC CentralAir Electrical KitchenQual Functional FireplaceQu GarageType GarageFinish GarageQual GarageCond PavedDrive PoolQC Fence MiscFeature SaleType SaleCondition;
+	model logSalePrice = MSSubClass MSZoning LotArea Street Alley LotShape LandContour Utilities LotConfig LandSlope Neighborhood Condition1 Condition2 BldgType HouseStyle OverallQual
+	OverallCond YearBuilt YearRemodAdd RoofStyle RoofMatl Exterior1st Exterior2nd MasVnrType MasVnrArea ExterQual ExterCond Foundation BsmtQual BsmtCond BsmtExposure BsmtFinType1 BsmtFinSF1 
+	BsmtFinType2 BsmtFinSF2 BsmtUnfSF TotalBsmtSF Heating HeatingQC CentralAir Electrical _1stFlrSF _2ndFlrSF LowQualFinSF GrLivArea BsmtFullBath BsmtHalfBath FullBath HalfBath BedroomAbvGr 
+	KitchenAbvGr KitchenQual TotRmsAbvGrd Functional Fireplaces FireplaceQu GarageType GarageYrBlt GarageFinish GarageCars GarageArea GarageQual GarageCond PavedDrive WoodDeckSF OpenPorchSF 
+	EnclosedPorch _3SsnPorch ScreenPorch PoolArea PoolQC Fence MiscFeature MiscVal MoSold YrSold SaleType SaleCondition
 	/selection =backward (stop=CV) cvmethod=random(5) stats=adjrsq;
 	
 	/* Stepwise */
-	proc glmselect data =Q2TRAIN;
-	model logSalePrice = LotArea YearBuilt YearRemodAdd MasVnrArea BsmtFinSF1 BsmtFinSF2 BsmtUnfSF TotalBsmtSF  _2ndFlrSF LowQualFinSF 
-	GrLivArea  GarageYrBlt GarageArea WoodDeckSF OpenPorchSF EnclosedPorch _3SsnPorch ScreenPorch PoolArea MiscVal
+	proc glmselect data =Q2TRAIN plots=all;
+	class MSZoning Street Alley LotShape LandContour Utilities LotConfig LandSlope Neighborhood Condition1 Condition2 BldgType HouseStyle RoofStyle RoofMatl Exterior1st Exterior2nd MasVnrType ExterQual ExterCond Foundation BsmtQual BsmtCond BsmtExposure BsmtFinType1 BsmtFinType2
+	Heating HeatingQC CentralAir Electrical KitchenQual Functional FireplaceQu GarageType GarageFinish GarageQual GarageCond PavedDrive PoolQC Fence MiscFeature SaleType SaleCondition;
+	model logSalePrice = MSSubClass MSZoning LotArea Street Alley LotShape LandContour Utilities LotConfig LandSlope Neighborhood Condition1 Condition2 BldgType HouseStyle OverallQual
+	OverallCond YearBuilt YearRemodAdd RoofStyle RoofMatl Exterior1st Exterior2nd MasVnrType MasVnrArea ExterQual ExterCond Foundation BsmtQual BsmtCond BsmtExposure BsmtFinType1 BsmtFinSF1 
+	BsmtFinType2 BsmtFinSF2 BsmtUnfSF TotalBsmtSF Heating HeatingQC CentralAir Electrical _1stFlrSF _2ndFlrSF LowQualFinSF GrLivArea BsmtFullBath BsmtHalfBath FullBath HalfBath BedroomAbvGr 
+	KitchenAbvGr KitchenQual TotRmsAbvGrd Functional Fireplaces FireplaceQu GarageType GarageYrBlt GarageFinish GarageCars GarageArea GarageQual GarageCond PavedDrive WoodDeckSF OpenPorchSF 
+	EnclosedPorch _3SsnPorch ScreenPorch PoolArea PoolQC Fence MiscFeature MiscVal MoSold YrSold SaleType SaleCondition
 	/selection =stepwise (stop=CV)  cvmethod=random(5) stats=adjrsq;
+
+/* Assumptions */
+	/* 	Forward Selected */
+	proc glm data=Q2TRAIN plots=all;
+	class Neighborhood;
+	model logSalePrice = Neighborhood OverallQual BsmtFinSF1 GrLivArea /solution;
 	
+	/* 	Backward Selected */
+	proc glm data=Q2TRAIN plots=all;
+	class MSZoning Street Alley LotShape LandContour Utilities LotConfig LandSlope Neighborhood Condition1 Condition2 BldgType HouseStyle RoofStyle RoofMatl Exterior1st Exterior2nd MasVnrType ExterQual ExterCond Foundation BsmtQual BsmtCond BsmtExposure BsmtFinType1 BsmtFinType2
+	Heating HeatingQC CentralAir Electrical KitchenQual Functional FireplaceQu GarageType GarageFinish GarageQual GarageCond PavedDrive PoolQC Fence MiscFeature SaleType SaleCondition;
+	model logSalePrice = MSSubClass MSZoning LotArea Street Alley LotShape LandContour Utilities LotConfig LandSlope Neighborhood Condition1 Condition2 BldgType HouseStyle
+	OverallQual OverallCond YearBuilt YearRemodAdd RoofStyle RoofMatl Exterior1st Exterior2nd MasVnrType MasVnrArea ExterQual ExterCond Foundation BsmtQual BsmtCond 
+	BsmtExposure BsmtFinType1 BsmtFinSF1 BsmtFinType2 BsmtFinSF2 BsmtUnfSF Heating HeatingQC CentralAir Electrical _1stFlrSF _2ndFlrSF LowQualFinSF BsmtFullBath BsmtHalfBath
+	FullBath HalfBath BedroomAbvGr KitchenAbvGr KitchenQual TotRmsAbvGrd Functional Fireplaces FireplaceQu GarageType GarageYrBlt GarageFinish GarageCars GarageArea 
+	GarageQual GarageCond PavedDrive WoodDeckSF OpenPorchSF EnclosedPorch _3SsnPorch ScreenPorch PoolArea PoolQC Fence MiscFeature MiscVal MoSold YrSold SaleType SaleCondition /solution;
 	
+	/* 	Stepwise Selected */
+	proc glm data=Q2TRAIN plots=all;
+	class Neighborhood BldgType RoofMatl;
+	model logSalePrice = Neighborhood BldgType OverallQual OverallCond YearBuilt RoofMatl BsmtFinSF1 TotalBsmtSF GrLivArea/ solution;
+
+/* 	Custom */
+	/* Check for normality in non-categorical variables*/
+	/* proc sgscatter data=work.import; /*Too many variables to really make sense of the graphics but it works */
+	/* matrix LotArea YearBuilt YearRemodAdd MasVnrArea BsmtFinSF1 BsmtFinSF2 BsmtUnfSF TotalBsmtSF _1stFlrSF _2ndFlrSF LowQualFinSF GrLivArea TotRmsAbvGrd GarageYrBlt GarageArea WoodDeckSF OpenPorchSF EnclosedPorch _3SsnPorch ScreenPorch PoolArea MiscVal SalePrice; */
+	/* 	proc glm since categorical variables */
+	/* remove extreme outliers and fix "NA" in lotfrontage */
+	data Q2CUSTOMTRAIN; 
+	set Q2TRAIN; 
+	logSalePrice = log(SalePrice);
+	if LotArea > 100000 then delete;
+	if GrLivArea = 5642 then delete;
+	if lotfrontage = "NA" then lotfrontage = .;
+	
+	/* Run again with log saleprice and extreme outliers removed. Cooks D and Studentized residuals are looking better. Give up on lotfrontage variable*/
+	proc reg data=Q2CUSTOMTRAIN;
+	model logSalePrice = LotArea YearBuilt YearRemodAdd MasVnrArea BsmtFinSF1 BsmtFinSF2 BsmtUnfSF TotalBsmtSF _1stFlrSF _2ndFlrSF LowQualFinSF
+	 GrLivArea TotRmsAbvGrd GarageYrBlt GarageArea WoodDeckSF OpenPorchSF EnclosedPorch _3SsnPorch ScreenPorch PoolArea MiscVal /VIF;
+
+	/* Run again with log saleprice and extreme outliers removed. Cooks D looks good. Studentized residuals are a mess probably due to colinearity among variables. Give up on lotfrontage variable*/
+	proc glm data=Q2CUSTOMTRAIN plots=all;
+	class MSZoning Street Alley LotShape LandContour Utilities LotConfig LandSlope Neighborhood Condition1 Condition2 BldgType HouseStyle RoofStyle RoofMatl Exterior1st Exterior2nd MasVnrType ExterQual ExterCond Foundation BsmtQual BsmtCond BsmtExposure BsmtFinType1 BsmtFinType2
+	Heating HeatingQC CentralAir Electrical KitchenQual Functional FireplaceQu GarageType GarageFinish GarageQual GarageCond PavedDrive PoolQC Fence MiscFeature SaleType SaleCondition;
+	model logSalePrice = MSSubClass MSZoning LotArea Street Alley LotShape LandContour Utilities LotConfig LandSlope Neighborhood Condition1 Condition2 BldgType HouseStyle OverallQual
+	OverallCond YearBuilt YearRemodAdd RoofStyle RoofMatl Exterior1st Exterior2nd MasVnrType MasVnrArea ExterQual ExterCond Foundation BsmtQual BsmtCond BsmtExposure BsmtFinType1 BsmtFinSF1 
+	BsmtFinType2 BsmtFinSF2 BsmtUnfSF TotalBsmtSF Heating HeatingQC CentralAir Electrical _1stFlrSF _2ndFlrSF LowQualFinSF GrLivArea BsmtFullBath BsmtHalfBath FullBath HalfBath BedroomAbvGr 
+	KitchenAbvGr KitchenQual TotRmsAbvGrd Functional Fireplaces FireplaceQu GarageType GarageYrBlt GarageFinish GarageCars GarageArea GarageQual GarageCond PavedDrive WoodDeckSF OpenPorchSF 
+	EnclosedPorch _3SsnPorch ScreenPorch PoolArea PoolQC Fence MiscFeature MiscVal MoSold YrSold SaleType SaleCondition /solution;
+
+
 
 	/* proc glmselect data=work.import testdata=work.Q2test plots(stepaxis = number) = (criterionpanel ASEPlot); */
 	/* model SalePrice = LotArea YearBuilt YearRemodAdd MasVnrArea BsmtFinSF1 BsmtFinSF2 BsmtUnfSF TotalBsmtSF _1stFlrSF _2ndFlrSF LowQualFinSF */
@@ -86,44 +110,91 @@ PROC CONTENTS DATA=WORK.TRAIN; RUN;
 	/*  selection=stepwise(select = sl stop = sl slentry = .15 sls = .15); */
 
 
-
-/* Prediction */
+/* Predictions */
 	/* Import the test data */
-	%web_drop_table(WORK.IMPORT1);
+	%web_drop_table(WORK.TEST);
 	FILENAME REFFILE '/folders/myshortcuts/StatisticalFoundations/Group Project/test.csv';
 	PROC IMPORT DATAFILE=REFFILE
 		DBMS=CSV
-		OUT=WORK.IMPORT1;
+		OUT=WORK.TEST;
 		GETNAMES=YES;
 	RUN;
-	PROC CONTENTS DATA=WORK.IMPORT1; RUN;
-	%web_open_table(WORK.IMPORT1);
+	PROC CONTENTS DATA=WORK.TEST; RUN;
+	%web_open_table(WORK.TEST);
 	
 	/* Add Saleprice column to test data */
-	data Q2test; 
-	set work.import1; 
+	data Q2TEST; 
+	set WORK.TEST; 
 	SalePrice = .;
 	run;
 	
 	/* Combine the train and test data */
-	data Q2;
-	set  work.import work.q2test;
+	data Q2PREDICT;
+	set  WORK.Q2TRAIN WORK.Q2TEST;
 	run;
 
-	/* Remember to Check diagnostics */
-	proc glm data = q2 plots=all;
-	model logSalePrice = LotArea YearBuilt YearRemodAdd MasVnrArea BsmtFinSF1 BsmtFinSF2 BsmtUnfSF TotalBsmtSF  _2ndFlrSF LowQualFinSF 
-	GrLivArea  GarageYrBlt GarageArea WoodDeckSF OpenPorchSF EnclosedPorch _3SsnPorch ScreenPorch PoolArea MiscVal /cli;
-	output out = results p = Predict;
+/* Forward */
+	proc glm data = Q2PREDICT plots=all;
+	class Neighborhood;
+	model logSalePrice = Neighborhood OverallQual BsmtFinSF1 GrLivArea /cli solution;
+	output out = ForwardSelectedresults p = Predict;
 	run;
 	
-	proc print data=work.results;
+	data ForwardSelectedresults;
+	set ForwardSelectedresults;
+	predictedSalePrice = logsaleprice;
+	keep id Predict saleprice logsaleprice predictedSalePrice;
+	
+	proc print data=ForwardSelectedresults;
+
+
+/* Backward */
+	proc glm data = Q2PREDICT plots=all;
+	class MSZoning Street Alley LotShape LandContour Utilities LotConfig LandSlope Neighborhood Condition1 Condition2 BldgType HouseStyle RoofStyle RoofMatl Exterior1st Exterior2nd MasVnrType ExterQual ExterCond Foundation BsmtQual BsmtCond BsmtExposure BsmtFinType1 BsmtFinType2
+	Heating HeatingQC CentralAir Electrical KitchenQual Functional FireplaceQu GarageType GarageFinish GarageQual GarageCond PavedDrive PoolQC Fence MiscFeature SaleType SaleCondition;
+	model logSalePrice = MSSubClass MSZoning LotArea Street Alley LotShape LandContour Utilities LotConfig LandSlope Neighborhood Condition1 Condition2 BldgType HouseStyle
+	OverallQual OverallCond YearBuilt YearRemodAdd RoofStyle RoofMatl Exterior1st Exterior2nd MasVnrType MasVnrArea ExterQual ExterCond Foundation BsmtQual BsmtCond 
+	BsmtExposure BsmtFinType1 BsmtFinSF1 BsmtFinType2 BsmtFinSF2 BsmtUnfSF Heating HeatingQC CentralAir Electrical _1stFlrSF _2ndFlrSF LowQualFinSF BsmtFullBath BsmtHalfBath
+	FullBath HalfBath BedroomAbvGr KitchenAbvGr KitchenQual TotRmsAbvGrd Functional Fireplaces FireplaceQu GarageType GarageYrBlt GarageFinish GarageCars GarageArea 
+	GarageQual GarageCond PavedDrive WoodDeckSF OpenPorchSF EnclosedPorch _3SsnPorch ScreenPorch PoolArea PoolQC Fence MiscFeature MiscVal MoSold YrSold SaleType SaleCondition  /cli solution;
+	output out = BackwardSelectedresults p = Predict;
+	run;
+	
+	data BackwardSelectedresults;
+	set BackwardSelectedresults;
+	predictedSalePrice = logsaleprice;
+	keep id Predict saleprice logsaleprice predictedSalePrice;
+	
+	proc print data=BackwardSelectedresults;
+/* Stepwise */
+	proc glm data = Q2PREDICT plots=all;
+	class Neighborhood BldgType RoofMatl;
+	model logSalePrice = Neighborhood BldgType OverallQual OverallCond YearBuilt RoofMatl BsmtFinSF1 TotalBsmtSF GrLivArea
+	 /cli solution;
+	output out = StepwiseSelectedresults p = Predict;
+	run;
+	
+	data StepwiseSelectedresults;
+	set StepwiseSelectedresults;
+	predictedSalePrice = logsaleprice;
+	keep id Predict saleprice logsaleprice predictedSalePrice;
+	
+	proc print data=StepwiseSelectedresults;
 
 
 
 
 
 
+
+
+
+
+
+
+
+
+/* Custom  Remember to check diagnostics */
 
 /* Maybe save for custom model */
 /* Run again with log saleprice and extreme outliers removed. Also removed _1stFlrSF and TotRmsAbvGrd since because they have extreme outliers and high VIF colinearity with GrLivArea anyway. Keep GrLiveArea because it has lowest variance*/
