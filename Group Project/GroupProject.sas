@@ -94,20 +94,15 @@ PROC CONTENTS DATA=WORK.TRAIN; RUN;
 
 	/* Run again with log saleprice and extreme outliers removed. Cooks D looks good. Studentized residuals are a mess probably due to colinearity among variables. Give up on lotfrontage variable*/
 	proc glm data=Q2CUSTOMTRAIN plots=all;
-	class MSZoning Street Alley LotShape LandContour Utilities LotConfig LandSlope Neighborhood Condition1 Condition2 BldgType HouseStyle RoofStyle RoofMatl Exterior1st Exterior2nd MasVnrType ExterQual ExterCond Foundation BsmtQual BsmtCond BsmtExposure BsmtFinType1 BsmtFinType2
-	Heating HeatingQC CentralAir Electrical KitchenQual Functional FireplaceQu GarageType GarageFinish GarageQual GarageCond PavedDrive PoolQC Fence MiscFeature SaleType SaleCondition;
-	model logSalePrice = MSSubClass MSZoning LotArea Street Alley LotShape LandContour Utilities LotConfig LandSlope Neighborhood Condition1 Condition2 BldgType HouseStyle OverallQual
-	OverallCond YearBuilt YearRemodAdd RoofStyle RoofMatl Exterior1st Exterior2nd MasVnrType MasVnrArea ExterQual ExterCond Foundation BsmtQual BsmtCond BsmtExposure BsmtFinType1 BsmtFinSF1 
-	BsmtFinType2 BsmtFinSF2 BsmtUnfSF TotalBsmtSF Heating HeatingQC CentralAir Electrical _1stFlrSF _2ndFlrSF LowQualFinSF GrLivArea BsmtFullBath BsmtHalfBath FullBath HalfBath BedroomAbvGr 
-	KitchenAbvGr KitchenQual TotRmsAbvGrd Functional Fireplaces FireplaceQu GarageType GarageYrBlt GarageFinish GarageCars GarageArea GarageQual GarageCond PavedDrive WoodDeckSF OpenPorchSF 
-	EnclosedPorch _3SsnPorch ScreenPorch PoolArea PoolQC Fence MiscFeature MiscVal MoSold YrSold SaleType SaleCondition /solution;
+	class Neighborhood BldgType RoofMatl;
+	model logSalePrice = Neighborhood BldgType OverallQual OverallCond YearBuilt RoofMatl BsmtFinSF1 TotalBsmtSF GrLivArea /solution;
 
 
 
-	/* proc glmselect data=work.import testdata=work.Q2test plots(stepaxis = number) = (criterionpanel ASEPlot); */
-	/* model SalePrice = LotArea YearBuilt YearRemodAdd MasVnrArea BsmtFinSF1 BsmtFinSF2 BsmtUnfSF TotalBsmtSF _1stFlrSF _2ndFlrSF LowQualFinSF */
-	/*  GrLivArea TotRmsAbvGrd GarageYrBlt GarageArea WoodDeckSF OpenPorchSF EnclosedPorch _3SsnPorch ScreenPorch PoolArea MiscVal / */
-	/*  selection=stepwise(select = sl stop = sl slentry = .15 sls = .15); */
+	proc glmselect data=Q2CUSTOMTRAIN;
+	model logSalePrice = LotArea YearBuilt YearRemodAdd 
+	 GrLivArea TotRmsAbvGrd WoodDeckSF OpenPorchSF EnclosedPorch _3SsnPorch ScreenPorch  /
+	 selection=stepwise(select = sl stop = sl slentry = .15 sls = .15);
 
 
 /* Predictions */
