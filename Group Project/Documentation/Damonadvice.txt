@@ -1,0 +1,13 @@
+Know the variables,
+3 or 4 very important variables
+Others explain variance- 
+INteraction terms th at may make model better; quadratic or x1*x2
+
+PROC GMl ways to select variables.
+
+Go after MLS data to test?
+
+randomly remove 20% of data and use 80 to train adn test.
+
+Consider housing bubble in sale price.
+
