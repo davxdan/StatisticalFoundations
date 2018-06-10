@@ -1,5 +1,5 @@
 data math;
-infile 'C:\Users\e80100\Desktop\MathACT.csv' dlm=',' firstobs=2;
+infile 'C:\Users\danie\Documents\GitHub\Statistics\Applied Unit 3\MathACT.csv' dlm=',' firstobs=2;
 input Sex $ Background $ Score;
 run;
 
