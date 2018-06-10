@@ -1,5 +1,4 @@
 /* Import the train data */
-/* SAS Encountered errors with MasVnrArea and GarageYrBlt due to "NA" in Numeric Fields. SAS set the "NA" values to "." Therefore no issues for now */
 FILENAME REFFILE 'C:\Users\danie\Documents\GitHub\Statistics\AppliedStatsGroupProject1\Train_v2_Subset_Scrubbed_Random20percent.csv';
 
 PROC IMPORT DATAFILE=REFFILE DBMS=CSV OUT=WORK.TRAIN;
@@ -8,6 +7,103 @@ RUN;
 
 PROC CONTENTS DATA=WORK.TRAIN;
 RUN;
+
+
+
+/* -----------------------------ANOVA----------------------------- */
+proc means data=train n mean max min range std missing noprint fw=8;
+	class f2 f5 f13 f778;
+	var loss;
+	output out=meansout mean=mean std=std;
+	title 'Summary of loss';
+run;
+
+/* 	Plotting */
+PROC PRINT data=meansout;
+	Title '_TYPE_ WITHOUT formatting';
+run;
+
+/* %TypeFormat(formatname=testtyp,var=f2 f5 f13 f778); */
+/* PROC PRINT data=meansout; */
+/* var _type_ f2 f5 f13 f778 _freq_; */
+/* format _type_ testtyp.; */
+/* title '_TYPE_ WITH formatting'; run;  */
+
+/* Theres probably a better way to do this will come back if time */
+data summarystats;
+	set meansout;
+if mean = 0 then delete;
+	if _TYPE_^=12  then
+		delete;
+	run;
+proc sort data=summarystats;
+by f5;
+run;
+proc print data =  summarystats;
+data plottingdata(keep=f5 f2 mean std meanloss);
+	set summarystats;
+	by f5 f2;
+	meanloss=mean;
+	output;
+	meanloss=mean - std;
+	output;
+	meanloss=mean + std;
+	output;
+run;
+proc sort data=plottingdata;
+	by f5;
+run;
+
+/* proc print data=plottingdata; */
+
+
+
+*Plotting options to make graph look somewhat decent;
+title1 'Plot Means with Standard Error Bars';
+symbol1 interpol=hiloctj color=green line=1;
+symbol2 interpol=hiloctj color=red line=1;
+symbol3 interpol=hiloctj color=blue line=1;
+symbol4 interpol=hiloctj color=purple line=1;
+symbol5 interpol=hiloctj color=black line=1;
+symbol6 interpol=hiloctj color=orange line=1;
+symbol7 interpol=hiloctj color=brown line=1;
+symbol8 interpol=hiloctj color=darkkhaki line=1;
+symbol9 interpol=hiloctj color=pink line=1;
+symbol10 interpol=hiloctj color=brpk line=1;
+symbol11 interpol=hiloctj color=depk line=1;
+
+symbol12 interpol=none color=vibg value=dot height=1.5;
+symbol13 interpol=none color=depk value=dot height=1.5;
+
+axis1 offset=(5, 5);
+axis2 label=("MeanLoss and a f2") order=(-9 to 11.5 by 1) minor=(n=1);
+*data has to be sorted on the variable which you are going to put on the x axis;
+proc gplot data=plottingdata;
+	plot meanloss*f5=f2 / vaxis=axis2 haxis=axis1;
+	*Since the first plot is actually 2 (male female) the corresponding symbol1 and symbol2 options are used which is telling sas to make error bars.  The option is hiloctj;
+	plot2 Mean*f5=f2  / vaxis=axis2 noaxis nolegend;
+	*This plot uses the final 2 symbols options to plot the mean points;
+	run;
+quit;
+*This is the end of the plotting code;
+
+
+
+
+
+
+
+
+/* 	2 Way ANOVA */
+proc glm data=math PLOTS=(DIAGNOSTICS RESIDUALS);
+	class sex background;
+	model score=background sex background*sex;
+	lsmeans background / pdiff tdiff adjust=bon;
+	estimate 'B vs A' background -1 1 0;
+	estimate 'What do you think?' background -1 0 1;
+	estimate 'What do you think2?' sex -1 1;
+	run;
+
 /*      Correct Skew*/
 /*	data TRAIN; */
 /*	set WORK.TRAIN; */
@@ -35,75 +131,6 @@ proc glmselect data=TRAIN plots=all;
 		cvmethod=random(5) stats=adjrsq;
 
 
-
-/* -----------------------------ANOVA----------------------------- */
-proc means data=train n mean max min range std missing noprint fw=8;
-	class f2 f5 f13 f778;
-	var loss;
-	output out=meansout mean=mean std=std;
-	title 'Summary of loss';
-run;
-
-/* 	Plotting */
-PROC PRINT data=meansout;
-	Title '_TYPE_ WITHOUT formatting';
-run;
-
-/* %TypeFormat(formatname=testtyp,var=f2 f5 f13 f778); */
-/* PROC PRINT data=meansout; */
-/* var _type_ f2 f5 f13 f778 _freq_; */
-/* format _type_ testtyp.; */
-/* title '_TYPE_ WITH formatting'; run;  */
-
-/* Theres probably a better way to do this will come back if time */
-data summarystats;
-	set meansout;
-if mean = 0 then delete;
-	if _TYPE_^=10  then
-		delete;
-	run;
-proc print data =  summarystats;
-data plottingdata(keep=f13 f2 mean std newvar);
-	set summarystats;
-	by f13 f2;
-	newvar=mean;
-	output;
-	newvar=mean - std;
-	output;
-	newvar=mean + std;
-	output;
-run;
-proc sort data=plottingdata;
-	by f13;
-run;
-*Plotting options to make graph look somewhat decent;
-title1 'Plot Means with Standard Error Bars from Calculated Data for Groups';
-symbol1 interpol=hiloctj color=vibg line=1;
-symbol2 interpol=hiloctj color=depk line=1;
-/* symbol3 interpol=none color=vibg value=dot height=1.5; */
-/* symbol4 interpol=none color=depk value=dot height=1.5; */
-axis1 offset=(2, 2);
-axis2 label=("Math ACT") order=(0 to 41 by 10) minor=(n=1);
-*data has to be sorted on the variable which you are going to put on the x axis;
-
-
-proc gplot data=plottingdata;
-	plot NewVar*f13=f2 / vaxis=axis2 haxis=axis1;
-	*Since the first plot is actually 2 (male female) the corresponding symbol1 and symbol2 options are used which is telling sas to make error bars.  The option is hiloctj;
-/* 	plot2 Mean*f13=f2 / vaxis=axis2 noaxis nolegend; */
-	*This plot uses the final 2 symbols options to plot the mean points;
-	run;
-quit;
-*This is the end of the plotting code;
-/* 	2 Way ANOVA */
-proc glm data=math PLOTS=(DIAGNOSTICS RESIDUALS);
-	class sex background;
-	model score=background sex background*sex;
-	lsmeans background / pdiff tdiff adjust=bon;
-	estimate 'B vs A' background -1 1 0;
-	estimate 'What do you think?' background -1 0 1;
-	estimate 'What do you think2?' sex -1 1;
-	run;
 
 			/* -----------------------------Sugi29 SAa Coder's Corner-----------------------------*/
 			/* http://www2.sas.com/proceedings/sugi29/045-29.pdf ABSTRACT: PROC MEANS analyzes datasets */
