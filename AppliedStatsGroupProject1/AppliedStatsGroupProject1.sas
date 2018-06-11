@@ -4,42 +4,33 @@ FILENAME REFFILE 'C:\Users\danie\Documents\GitHub\Statistics\AppliedStatsGroupPr
 PROC IMPORT DATAFILE=REFFILE DBMS=CSV OUT=WORK.TRAIN;
 	GETNAMES=YES;
 RUN;
-
 PROC CONTENTS DATA=WORK.TRAIN;
 RUN;
-
-
-
-/* -----------------------------ANOVA----------------------------- */
+/* -----------------------------Check for interaction prior to ANOVA----------------------------- */
 proc means data=train n mean max min range std missing noprint fw=8;
 	class f2 f5 f13 f778;
 	var loss;
 	output out=meansout mean=mean std=std;
 	title 'Summary of loss';
 run;
-
 /* 	Plotting */
-PROC PRINT data=meansout;
-	Title '_TYPE_ WITHOUT formatting';
-run;
-
+/* PROC PRINT data=meansout; */
+/* 	Title '_TYPE_ WITHOUT formatting'; */
+/* run; */
 /* %TypeFormat(formatname=testtyp,var=f2 f5 f13 f778); */
 /* PROC PRINT data=meansout; */
 /* var _type_ f2 f5 f13 f778 _freq_; */
 /* format _type_ testtyp.; */
 /* title '_TYPE_ WITH formatting'; run;  */
-
-/* Theres probably a better way to do this will come back if time */
+/* -----------------------------Get Rid of Observations that Have no Loss----------------------------- */
 data summarystats;
 	set meansout;
-if mean = 0 then delete;
-	if _TYPE_^=12  then
-		delete;
-	run;
+	if mean = 0 then delete;
+	if _TYPE_^=12  then delete;
+run;
 proc sort data=summarystats;
 by f5;
 run;
-proc print data =  summarystats;
 data plottingdata(keep=f5 f2 mean std meanloss);
 	set summarystats;
 	by f5 f2;
@@ -53,12 +44,7 @@ run;
 proc sort data=plottingdata;
 	by f5;
 run;
-
-/* proc print data=plottingdata; */
-
-
-
-*Plotting options to make graph look somewhat decent;
+*Mimic Dr. Turner: Plotting options to make graph look somewhat decent;
 title1 'Plot Means with Standard Error Bars';
 symbol1 interpol=hiloctj color=green line=1;
 symbol2 interpol=hiloctj color=red line=1;
@@ -71,13 +57,19 @@ symbol8 interpol=hiloctj color=darkkhaki line=1;
 symbol9 interpol=hiloctj color=pink line=1;
 symbol10 interpol=hiloctj color=brpk line=1;
 symbol11 interpol=hiloctj color=depk line=1;
-
-symbol12 interpol=none color=vibg value=dot height=1.5;
-symbol13 interpol=none color=depk value=dot height=1.5;
-
+symbol12 interpol=none color=green value=dot height=1.5;
+symbol13 interpol=none color=red value=dot height=1.5;
+symbol14 interpol=none color=blue value=dot height=1.5;
+symbol15 interpol=none color=purple value=dot height=1.5;
+symbol16 interpol=none color=black value=dot height=1.5;
+symbol17 interpol=none color=orange value=dot height=1.5;
+symbol18 interpol=none color=brown value=dot height=1.5;
+symbol19 interpol=none color=darkkhaki value=dot height=1.5;
+symbol20 interpol=none color=pink value=dot height=1.5;
+symbol21 interpol=none color=brpk value=dot height=1.5;
+symbol22 interpol=none color=depk value=dot height=1.5;
 axis1 offset=(5, 5);
-axis2 label=("MeanLoss and a f2") order=(-9 to 11.5 by 1) minor=(n=1);
-*data has to be sorted on the variable which you are going to put on the x axis;
+axis2 label=("MeanLoss & f2") order=(-9 to 11.5 by 1) minor=(n=1);
 proc gplot data=plottingdata;
 	plot meanloss*f5=f2 / vaxis=axis2 haxis=axis1;
 	*Since the first plot is actually 2 (male female) the corresponding symbol1 and symbol2 options are used which is telling sas to make error bars.  The option is hiloctj;
@@ -85,7 +77,113 @@ proc gplot data=plottingdata;
 	*This plot uses the final 2 symbols options to plot the mean points;
 	run;
 quit;
-*This is the end of the plotting code;
+/* -----------------------------Zomfg the variances are all over the place----------------------------- */
+/* -----------------------------See how to handle via BLT---------------------------------------------- */
+/* Preliminary Analysis */
+data fVariablesandLoss;
+	set train;
+if loss = 0 then delete;
+run;
+/* proc univariate data = fVariablesandLoss; */
+/* class f2 f5; */
+/* var loss; */
+/* run; */
+proc means data=fVariablesandLoss N mean stddev median q1 q3;
+class f2; 
+var loss;
+output out = f2meansout mean=mean std=std;
+run;
+data f2meantsout2;
+set f2meansout;
+if _Type_=0 then delete;
+proc sort data=f2meantsout2; by mean; run;
+data reshape (keep = yvar f2 mean);
+set f2meantsout2;
+yvar = mean;
+output;
+yvar = mean-std;
+output;
+yvar = mean+std;
+output;
+run;
+title 'Means with SE Bars from BLT';
+axis1 offset=(5,5) minor=none;
+axis2 label=(angle=90);
+symbol1 interpol=hiloctj color=blue line=2;
+symbol2 interpol=none color=blue value=dot height=1.5;
+proc gplot data=reshape;
+plot yvar*f2 mean*f2 / overlay haxis=axis1 vaxis=axis2;
+run; quit;
+/* Plot shows non-constant variance so try log or logit*/
+/* -----------Ask about Logit------------- */
+data fVariablesandLogLoss;
+set fVariablesandLoss;
+logloss = log(loss);
+run;
+proc means data=fVariablesandLogLoss N mean stddev median q1 q3;
+class f2;
+var logloss;
+output out = f2meansoutLogLoss mean=mean std=std;
+run;
+/* proc print data=f2meansoutLogloss; run; */
+data f2meansoutLogloss2;
+set f2meansoutLogloss;
+if _Type_=0 then delete;
+proc sort data=f2meansoutLogloss2; by mean; run;
+data reshape (keep = yvar f2 mean);
+set f2meansoutLogloss2;
+yvar = mean;
+output;
+yvar = mean-std;
+output;
+yvar = mean+std;
+output;
+run;
+title 'Means with SE Bars from BLT';
+axis1 offset=(5,5) minor=none;
+axis2 label=(angle=90);
+symbol1 interpol=hiloctj color=blue line=2;
+symbol2 interpol=none color=blue value=dot height=1.5;
+proc gplot data=reshape;
+plot yvar*f2 mean*f2 / overlay haxis=axis1 vaxis=axis2;
+run; quit;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+proc glm data=fvariablesandloss plots=residuals;
+class f2 f5;
+model loss = f2 f5;
+output out=resids rstudent=rstudent;
+run;
+proc gplot data=resids;
+plot rstudent*f2;
+run;
+
+
+
+
+
 
 
 
@@ -95,14 +193,14 @@ quit;
 
 
 /* 	2 Way ANOVA */
-proc glm data=math PLOTS=(DIAGNOSTICS RESIDUALS);
-	class sex background;
-	model score=background sex background*sex;
-	lsmeans background / pdiff tdiff adjust=bon;
-	estimate 'B vs A' background -1 1 0;
-	estimate 'What do you think?' background -1 0 1;
-	estimate 'What do you think2?' sex -1 1;
-	run;
+/* proc glm data=math PLOTS=(DIAGNOSTICS RESIDUALS); */
+/* 	class sex background; */
+/* 	model score=background sex background*sex; */
+/* 	lsmeans background / pdiff tdiff adjust=bon; */
+/* 	estimate 'B vs A' background -1 1 0; */
+/* 	estimate 'What do you think?' background -1 0 1; */
+/* 	estimate 'What do you think2?' sex -1 1; */
+/* 	run; */
 
 /*      Correct Skew*/
 /*	data TRAIN; */
@@ -115,20 +213,20 @@ proc glm data=math PLOTS=(DIAGNOSTICS RESIDUALS);
 /* Looking for Large R^2 and small CV Press */
 
 /* Forward */
-proc glmselect data=TRAIN plots=all;
-	class f2 f5 f13 f778;
-	model loss=f1 f3 f4 f6 f7 f8 f9 f10 /selection=Forward (stop=CV) 
-		cvmethod=random(5) stats=adjrsq;
+/* proc glmselect data=TRAIN plots=all; */
+/* 	class f2 f5 f13 f778; */
+/* 	model loss=f1 f3 f4 f6 f7 f8 f9 f10 /selection=Forward (stop=CV)  */
+/* 		cvmethod=random(5) stats=adjrsq; */
 /* Backward */
-proc glmselect data=TRAIN plots=all;
-	class f2 f5 f13 f778;
-	model loss=f1 f3 f4 f6 f7 f8 f9 f10 /selection=backward (stop=CV) 
-		cvmethod=random(5) stats=adjrsq;
+/* proc glmselect data=TRAIN plots=all; */
+/* 	class f2 f5 f13 f778; */
+/* 	model loss=f1 f3 f4 f6 f7 f8 f9 f10 /selection=backward (stop=CV)  */
+/* 		cvmethod=random(5) stats=adjrsq; */
 /* Stepwise */
-proc glmselect data=TRAIN plots=all;
-	class f2 f5 f13 f778;
-	model loss=f1 f3 f4 f6 f7 f8 f9 f10 /selection=stepwise (stop=CV) 
-		cvmethod=random(5) stats=adjrsq;
+/* proc glmselect data=TRAIN plots=all; */
+/* 	class f2 f5 f13 f778; */
+/* 	model loss=f1 f3 f4 f6 f7 f8 f9 f10 /selection=stepwise (stop=CV)  */
+/* 		cvmethod=random(5) stats=adjrsq; */
 
 
 
@@ -194,238 +292,4 @@ proc glmselect data=TRAIN plots=all;
 			proc format cntlin=_tmp; run;
 			* Delete _tmp dataset to clean up work library;
 			proc datasets; delete _tmp; quit; run;
-			%mend TypeFormat; 
-			
-
-/* -----------------------------Dr. Turner----------------------------- */
-*Calculating a summary stats table and outputing the results in a dataset called "meansout";
-proc means data=math n mean max min range std fw=8;
-	class Sex Background;
-	var Score;
-	output out=meansout mean=mean std=std;
-	title 'Summary of Math ACT Scores';
-run;
-/* The following chunk of code is some basic code to plot the summary statistics in a convenient profile type plot. */
-/* This will probably take you some time to understand how sas works to finally get the plot but for those who put in the */
-/* effort, your understanding of SAS will be better for it and you will soon figure out you can do a lot of differnt things. */
-/* For those of you who do not have the time, the alternative is to take the summary statistics output and move them over to */
-/* excel and create a plot over there. */
-data summarystats;
-	set meansout;
-	if _TYPE_=0 then
-		delete;
-	if _TYPE_=1 then
-		delete;
-	if _TYPE_=2 then
-		delete;
-run;
-/* This data step creates the necessary data set to plot the mean estimates along with the error bars */
-data plottingdata(keep=Sex Background mean std newvar);
-	set summarystats;
-	by Sex Background;
-	newvar=mean;
-	output;
-	newvar=mean - std;
-	output;
-	newvar=mean + std;
-	output;
-run;
-/* Plotting options to make graph look somewhat decent */
-title1 'Plot Means with Standard Error Bars from Calculated Data for Groups';
-symbol1 interpol=hiloctj color=vibg line=1;
-symbol2 interpol=hiloctj color=depk line=1;
-symbol3 interpol=none color=vibg value=dot height=1.5;
-symbol4 interpol=none color=depk value=dot height=1.5;
-axis1 offset=(2, 2);
-axis2 label=("Math ACT") order=(0 to 40 by 10) minor=(n=1);
-/* data has to be sorted on the variable which you are going to put on the x axis */
-proc sort data=plottingdata;
-	by Background;
-run;
-proc gplot data=plottingdata;
-	plot NewVar*Background=Sex / vaxis=axis2 haxis=axis1;
-/* 	Since the first plot is actually 2 (male female) the corresponding symbol1 and symbol2 options are used which is  */
-/* 	telling sas to make error bars.  The option is hiloctj */
-	plot2 Mean*Background=Sex / vaxis=axis2 noaxis nolegend;
-	/* This plot uses the final 2 symbols options to plot the mean points */
-	run;
-quit;
-/* This is the end of the plotting code */
-
-
-
-
-
-
-
-
-/* Last Project Code */
-	/* Assumptions */
-	/* 	Forward Selected */
-proc glm data=Q2TRAIN plots=all;
-	class Neighborhood;
-	model logSalePrice=Neighborhood OverallQual BsmtFinSF1 GrLivArea /solution;
-
-	/* 	Backward Selected */
-proc glm data=Q2TRAIN plots=all;
-	class MSZoning Street Alley LotShape LandContour Utilities LotConfig LandSlope 
-		Neighborhood Condition1 Condition2 BldgType HouseStyle RoofStyle RoofMatl 
-		Exterior1st Exterior2nd MasVnrType ExterQual ExterCond Foundation BsmtQual 
-		BsmtCond BsmtExposure BsmtFinType1 BsmtFinType2 Heating HeatingQC CentralAir 
-		Electrical KitchenQual Functional FireplaceQu GarageType GarageFinish 
-		GarageQual GarageCond PavedDrive PoolQC Fence MiscFeature SaleType 
-		SaleCondition;
-	model logSalePrice=MSSubClass MSZoning LotArea Street Alley LotShape 
-		LandContour Utilities LotConfig LandSlope Neighborhood Condition1 Condition2 
-		BldgType HouseStyle OverallQual OverallCond YearBuilt YearRemodAdd RoofStyle 
-		RoofMatl Exterior1st Exterior2nd MasVnrType MasVnrArea ExterQual ExterCond 
-		Foundation BsmtQual BsmtCond BsmtExposure BsmtFinType1 BsmtFinSF1 
-		BsmtFinType2 BsmtFinSF2 BsmtUnfSF Heating HeatingQC CentralAir Electrical 
-		_1stFlrSF _2ndFlrSF LowQualFinSF BsmtFullBath BsmtHalfBath FullBath HalfBath 
-		BedroomAbvGr KitchenAbvGr KitchenQual TotRmsAbvGrd Functional Fireplaces 
-		FireplaceQu GarageType GarageYrBlt GarageFinish GarageCars GarageArea 
-		GarageQual GarageCond PavedDrive WoodDeckSF OpenPorchSF EnclosedPorch 
-		_3SsnPorch ScreenPorch PoolArea PoolQC Fence MiscFeature MiscVal MoSold 
-		YrSold SaleType SaleCondition /solution;
-
-	/* 	Stepwise Selected */
-proc glm data=Q2TRAIN plots=all;
-	class Neighborhood BldgType RoofMatl;
-	model logSalePrice=Neighborhood BldgType OverallQual OverallCond YearBuilt 
-		RoofMatl BsmtFinSF1 TotalBsmtSF GrLivArea/ solution;
-
-	/* 	Custom */
-	/* 	See if we can improve stepwise */
-data Q2CUSTOMTRAIN;
-	set Q2TRAIN;
-	logSalePrice=log(SalePrice);
-
-	if LotArea > 100000 then
-		delete;
-
-	if GrLivArea > 5641 then
-		delete;
-
-	/* 	Check for colinearity in variables */
-proc SGSCATTER data=Q2CUSTOMTRAIN;
-	matrix Neighborhood BldgType OverallQual OverallCond YearBuilt RoofMatl 
-		BsmtFinSF1 TotalBsmtSF GrLivArea;
-
-	/* 	Check for variable Inflation */
-proc reg data=Q2CUSTOMTRAIN;
-	model logSalePrice=OverallQual OverallCond YearBuilt BsmtFinSF1 TotalBsmtSF 
-		GrLivArea / selection=cp VIF;
-
-proc glm data=Q2CUSTOMTRAIN plots=all;
-	class Neighborhood BldgType RoofMatl;
-	model logSalePrice=Neighborhood BldgType OverallQual OverallCond YearBuilt 
-		RoofMatl BsmtFinSF1 TotalBsmtSF GrLivArea/ solution;
-
-	/* 		Try Custom Model		 */
-proc glmselect data=Q2CUSTOMTRAIN plots=all;
-	class Neighborhood BldgType RoofMatl;
-	model logSalePrice=Neighborhood BldgType OverallQual OverallCond YearBuilt 
-		RoofMatl BsmtFinSF1 TotalBsmtSF GrLivArea /selection=stepwise (stop=CV) 
-		cvmethod=random(5) stats=adjrsq;
-
-	/* Predictions */
-	/* Import the test data */
-	%web_drop_table(WORK.TEST);
-	FILENAME REFFILE 
-		'/folders/myshortcuts/StatisticalFoundations/Group Project/test.csv';
-
-PROC IMPORT DATAFILE=REFFILE DBMS=CSV OUT=WORK.TEST;
-	GETNAMES=YES;
-RUN;
-
-PROC CONTENTS DATA=WORK.TEST;
-RUN;
-
-%web_open_table(WORK.TEST);
-
-/* Add Saleprice column to test data */
-data Q2TEST;
-	set WORK.TEST;
-	SalePrice=.;
-run;
-
-/* Combine the train and test data */
-data Q2PREDICT;
-	set WORK.Q2TRAIN WORK.Q2TEST;
-run;
-
-/* Forward */
-proc glm data=Q2PREDICT plots=all;
-	class Neighborhood;
-	model logSalePrice=Neighborhood OverallQual BsmtFinSF1 GrLivArea /cli solution;
-	output out=ForwardSelectedresults p=Predict;
-	run;
-
-data ForwardSelectedresults;
-	set ForwardSelectedresults;
-	predictedSalePrice=logsaleprice;
-	keep id Predict saleprice logsaleprice predictedSalePrice;
-
-proc print data=ForwardSelectedresults;
-	/* Backward */
-proc glm data=Q2PREDICT plots=all;
-	class MSZoning Street Alley LotShape LandContour Utilities LotConfig LandSlope 
-		Neighborhood Condition1 Condition2 BldgType HouseStyle RoofStyle RoofMatl 
-		Exterior1st Exterior2nd MasVnrType ExterQual ExterCond Foundation BsmtQual 
-		BsmtCond BsmtExposure BsmtFinType1 BsmtFinType2 Heating HeatingQC CentralAir 
-		Electrical KitchenQual Functional FireplaceQu GarageType GarageFinish 
-		GarageQual GarageCond PavedDrive PoolQC Fence MiscFeature SaleType 
-		SaleCondition;
-	model logSalePrice=MSSubClass MSZoning LotArea Street Alley LotShape 
-		LandContour Utilities LotConfig LandSlope Neighborhood Condition1 Condition2 
-		BldgType HouseStyle OverallQual OverallCond YearBuilt YearRemodAdd RoofStyle 
-		RoofMatl Exterior1st Exterior2nd MasVnrType MasVnrArea ExterQual ExterCond 
-		Foundation BsmtQual BsmtCond BsmtExposure BsmtFinType1 BsmtFinSF1 
-		BsmtFinType2 BsmtFinSF2 BsmtUnfSF Heating HeatingQC CentralAir Electrical 
-		_1stFlrSF _2ndFlrSF LowQualFinSF BsmtFullBath BsmtHalfBath FullBath HalfBath 
-		BedroomAbvGr KitchenAbvGr KitchenQual TotRmsAbvGrd Functional Fireplaces 
-		FireplaceQu GarageType GarageYrBlt GarageFinish GarageCars GarageArea 
-		GarageQual GarageCond PavedDrive WoodDeckSF OpenPorchSF EnclosedPorch 
-		_3SsnPorch ScreenPorch PoolArea PoolQC Fence MiscFeature MiscVal MoSold 
-		YrSold SaleType SaleCondition /cli solution;
-	output out=BackwardSelectedresults p=Predict;
-	run;
-
-data BackwardSelectedresults;
-	set BackwardSelectedresults;
-	predictedSalePrice=logsaleprice;
-	keep id Predict saleprice logsaleprice predictedSalePrice;
-
-proc print data=BackwardSelectedresults;
-	/* Stepwise */
-proc glm data=Q2PREDICT plots=all;
-	class Neighborhood BldgType RoofMatl;
-	model logSalePrice=Neighborhood BldgType OverallQual OverallCond YearBuilt 
-		RoofMatl BsmtFinSF1 TotalBsmtSF GrLivArea /cli solution;
-	output out=StepwiseSelectedresults p=Predict;
-	run;
-
-data StepwiseSelectedresults;
-	set StepwiseSelectedresults;
-	predictedSalePrice=logsaleprice;
-	keep id Predict saleprice logsaleprice predictedSalePrice;
-
-proc print data=StepwiseSelectedresults;
-	/* Custom */
-data Q2PREDICT;
-	set WORK.Q2CUSTOMTRAIN WORK.Q2TEST;
-run;
-
-proc glm data=Q2PREDICT plots=all;
-	class Neighborhood BldgType RoofMatl;
-	model logSalePrice=Neighborhood BldgType OverallQual OverallCond YearBuilt 
-		RoofMatl BsmtFinSF1 TotalBsmtSF GrLivArea /cli solution;
-	output out=CustomSelectedresults p=Predict;
-	run;
-
-data CustomSelectedresults;
-	set CustomSelectedresults;
-	predictedSalePrice=logsaleprice;
-	keep id Predict saleprice logsaleprice predictedSalePrice;
-
-proc print data=CustomSelectedresults;
+			%mend TypeFormat;
