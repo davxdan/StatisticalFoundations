@@ -78,6 +78,9 @@ proc gplot data=plottingdata;
 	run;
 quit;
 /* -----------------------------Zomfg the variances are all over the place----------------------------- */
+
+
+
 /* -----------------------------See how to handle via BLT---------------------------------------------- */
 /* Preliminary Analysis */
 data fVariablesandLoss;
@@ -87,18 +90,20 @@ run;
 /* proc univariate data = fVariablesandLoss; */
 /* class f2 f5; */
 /* var loss; */
+/* histogram loss; */
 /* run; */
 proc means data=fVariablesandLoss N mean stddev median q1 q3;
 class f2; 
 var loss;
 output out = f2meansout mean=mean std=std;
 run;
-data f2meantsout2;
+proc print data=f2meansout;
+data f2meansout;
 set f2meansout;
-if _Type_=0 then delete;
-proc sort data=f2meantsout2; by mean; run;
+if _TYPE_^=1  then delete;
+proc sort data=f2meansout; by mean; run;
 data reshape (keep = yvar f2 mean);
-set f2meantsout2;
+set f2meansout;
 yvar = mean;
 output;
 yvar = mean-std;
@@ -106,32 +111,50 @@ output;
 yvar = mean+std;
 output;
 run;
-title 'Means with SE Bars from BLT';
+/* proc print data=reshape; */
+title 'Means of Loss with SE Bars by f2';
 axis1 offset=(5,5) minor=none;
 axis2 label=(angle=90);
 symbol1 interpol=hiloctj color=blue line=2;
-symbol2 interpol=none color=blue value=dot height=1.5;
+symbol2 interpol=none color=blue value=dot height=1;
 proc gplot data=reshape;
 plot yvar*f2 mean*f2 / overlay haxis=axis1 vaxis=axis2;
 run; quit;
-/* Plot shows non-constant variance so try log or logit*/
-/* -----------Ask about Logit------------- */
+
+/* Model */
+symbol interpol=none color=blue value=dot height=1.5;
+proc glm data=fvariablesandloss plots=residuals;
+class f2;
+model loss = f2;
+output out=resids rstudent=rstudent p=yhat;
+/* p=yhat makes it use predicted values instead of ... */
+run;
+proc gplot data=resids;
+plot rstudent*yhat;
+run;
+/* f2 Residuals are a disaster so begin transform*/
+
+
+
+/* -----------Transform loss using log------------- */
 data fVariablesandLogLoss;
 set fVariablesandLoss;
 logloss = log(loss);
 run;
+/* proc print data=fvariablesandlogloss; */
 proc means data=fVariablesandLogLoss N mean stddev median q1 q3;
 class f2;
 var logloss;
 output out = f2meansoutLogLoss mean=mean std=std;
 run;
 /* proc print data=f2meansoutLogloss; run; */
-data f2meansoutLogloss2;
+data f2meansoutLogloss;
 set f2meansoutLogloss;
 if _Type_=0 then delete;
-proc sort data=f2meansoutLogloss2; by mean; run;
+proc sort data=f2meansoutLogloss; by mean; run;
+/* proc print data=f2meansoutLogloss; run; */
 data reshape (keep = yvar f2 mean);
-set f2meansoutLogloss2;
+set f2meansoutLogloss;
 yvar = mean;
 output;
 yvar = mean-std;
@@ -139,7 +162,7 @@ output;
 yvar = mean+std;
 output;
 run;
-title 'Means with SE Bars from BLT';
+title 'Means of logLoss with SE Bars by f2';
 axis1 offset=(5,5) minor=none;
 axis2 label=(angle=90);
 symbol1 interpol=hiloctj color=blue line=2;
@@ -148,39 +171,27 @@ proc gplot data=reshape;
 plot yvar*f2 mean*f2 / overlay haxis=axis1 vaxis=axis2;
 run; quit;
 
+/* Randomized Complete Block Design Model with logloss */
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-proc glm data=fvariablesandloss plots=residuals;
-class f2 f5;
-model loss = f2 f5;
-output out=resids rstudent=rstudent;
+/* proc print data=fvariablesandlogloss; */
+symbol1 interpol=none color=blue value=dot height=.5;
+proc glm data=fvariablesandlogloss plots=residuals;
+class f2 f13;
+model logloss = f2 f13;
+output out=resids rstudent=rstudent p=yhat;
+/* p=yhat makes it use predicted values instead of ... */
 run;
 proc gplot data=resids;
-plot rstudent*f2;
+plot rstudent*yhat;
 run;
 
-
+/* Contrasts */
+/* f2=1	f2=2	f2=3	f2=4	f2=6	f2=7	f2=8	f2=9	f2=10	f2=11	f5=1	f5=2	f5=3	f5=4	f5=7	f5=10	f5=13	f5=15	f5=16	f5=17 */
+proc glm data=fvariablesandlogloss plots=residuals;
+class f13;
+model logloss = f13;
+/* contrast 'f2' f2 0 0 0 0 0 0 -1 0 0 1/e; */
+run;
 
 
 
