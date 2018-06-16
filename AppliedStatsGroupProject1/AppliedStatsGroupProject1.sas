@@ -6,7 +6,10 @@ RUN;
 PROC CONTENTS DATA=WORK.TRAIN;
 RUN;
 
-/* Question of interest is does f2 and or f5 indicate amount of loss? */
+/* Question of interest*/
+/*Do f2 and f5 together affect amount of loss? */
+/* Does f2 alone affect the amount of loss? */
+/* Does f5 alone affect the amount of loss? */
 /* Since qoi is only about AMOUNT loss Remove all observations that have no loss */
 data train(keep=f2 f5 loss);
 	set train;
@@ -78,14 +81,9 @@ quit;
 
 /* Model */
 symbol interpol=none color=blue value=dot height=1.5;
-proc glm data=train plots=residuals;
+proc glm data=train PLOTS=(DIAGNOSTICS RESIDUALS);
 class f2 f5;
-model loss = f2*f5;
-output out=resids rstudent=rstudent p=yhat;
-/* p=yhat makes it use predicted values instead of ... */
-run;
-proc gplot data=resids;
-plot rstudent*yhat;
+model loss = f2 f5 f2*f5;
 run;
 /* Residuals are a disaster so begin transform*/
 /* -----------Transform loss using log------------- */
@@ -96,35 +94,34 @@ run;
 proc print data=trainlogloss;
 
 /* Run model again with logloss */
-symbol interpol=none color=blue value=dot height=1.5;
-proc glm data=trainlogloss plots=residuals;
+proc glm data=trainlogloss PLOTS=(DIAGNOSTICS RESIDUALS);
 class f2 f5;
-model logloss = f2*f5;
+model logloss = f2 f5 f2*f5;
+run;
+/* Residuals looking better but still some patterns and extreme observations */
+/* Type 3 is when we adjust variance for both explanatory variables. It's different ni this case because the data is unbalances */
+/* Over all f p value 0.0051 so we reject overall null. There indeed is an effect. */
+/*  */
+/* f2 pval 0.0265 so F2 is significant */
+/* f5 pval 0.6487 so f5 is not statistically significant */
+/* f2*f5 pval 0.0757 Noy significant */
+/* R2  is stoopid low. This is because the error is soo high. If I could start over I would have chosen a different dataset. */
+/* this tells me f5 is useless so re-run with only f2 */
+
+/* Run model again with f2 and logloss */
+proc glm data=trainlogloss plots=residuals;
+class f2;
+model logloss = f2;
 output out=resids rstudent=rstudent p=yhat;
 /* p=yhat makes it use predicted values instead of ... */
 run;
 proc gplot data=resids;
 plot rstudent*yhat;
 run;
-/* Residuals looking better but still some patterns */
-/* R2  is stoopid low. This is because the error is soo high. If I could start over I would have chosen a different dataset. */
-
-
-/* Randomized Complete Block Design Model with logloss */
 
 /* Contrasts */
-/* f2=1	f2=2	f2=3	f2=4	f2=6	f2=7	f2=8	f2=9	f2=10	f2=11	f5=1	f5=2	f5=3	f5=4	f5=7	f5=10	f5=13	f5=15	f5=16	f5=17 */
-
-
-
-
-
-
-
-
-
-
-
+/* f2 1	2 3 4 6 7 8 9 10 11 */
+/* f5=1 */
 
 /* 	2 Way ANOVA */
 /* proc glm data=math PLOTS=(DIAGNOSTICS RESIDUALS); */
