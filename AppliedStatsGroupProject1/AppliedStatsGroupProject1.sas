@@ -1,39 +1,35 @@
-/* Import the train data */
+/* Import the train OO9data */
 FILENAME REFFILE 'C:\Users\danie\Documents\GitHub\Statistics\AppliedStatsGroupProject1\Train_v2_Subset_Scrubbed_Random20percent.csv';
-
 PROC IMPORT DATAFILE=REFFILE DBMS=CSV OUT=WORK.TRAIN;
 	GETNAMES=YES;
 RUN;
 PROC CONTENTS DATA=WORK.TRAIN;
 RUN;
+
+/* Question of interest is does f2 and or f5 indicate amount of loss? */
+/* Since qoi is only about AMOUNT loss Remove all observations that have no loss */
+data train(keep=f2 f5 loss);
+	set train;
+if loss = 0 then delete;
+run;
+proc sort data=train;
+by f2;
+run;
 /* -----------------------------Check for interaction prior to ANOVA----------------------------- */
 proc means data=train n mean max min range std missing noprint fw=8;
-	class f2 f5 f13 f778;
+	class f2 f5;
 	var loss;
 	output out=meansout mean=mean std=std;
 	title 'Summary of loss';
 run;
-/* 	Plotting */
-/* PROC PRINT data=meansout; */
-/* 	Title '_TYPE_ WITHOUT formatting'; */
-/* run; */
-/* %TypeFormat(formatname=testtyp,var=f2 f5 f13 f778); */
-/* PROC PRINT data=meansout; */
-/* var _type_ f2 f5 f13 f778 _freq_; */
-/* format _type_ testtyp.; */
-/* title '_TYPE_ WITH formatting'; run;  */
-/* -----------------------------Get Rid of Observations that Have no Loss----------------------------- */
 data summarystats;
 	set meansout;
-	if mean = 0 then delete;
-	if _TYPE_^=12  then delete;
+	if _TYPE_^=3  then delete;
 run;
-proc sort data=summarystats;
-by f5;
-run;
-data plottingdata(keep=f5 f2 mean std meanloss);
+proc print data=summarystats;
+data plottingdata(keep=f2 f5 std mean meanloss);
 	set summarystats;
-	by f5 f2;
+	by f2 f5;
 	meanloss=mean;
 	output;
 	meanloss=mean - std;
@@ -42,8 +38,9 @@ data plottingdata(keep=f5 f2 mean std meanloss);
 	output;
 run;
 proc sort data=plottingdata;
-	by f5;
+	by f2;
 run;
+proc print data=plottingdata;
 *Mimic Dr. Turner: Plotting options to make graph look somewhat decent;
 title1 'Plot Means with Standard Error Bars';
 symbol1 interpol=hiloctj color=green line=1;
@@ -57,141 +54,67 @@ symbol8 interpol=hiloctj color=darkkhaki line=1;
 symbol9 interpol=hiloctj color=pink line=1;
 symbol10 interpol=hiloctj color=brpk line=1;
 symbol11 interpol=hiloctj color=depk line=1;
-symbol12 interpol=none color=green value=dot height=1.5;
-symbol13 interpol=none color=red value=dot height=1.5;
-symbol14 interpol=none color=blue value=dot height=1.5;
-symbol15 interpol=none color=purple value=dot height=1.5;
-symbol16 interpol=none color=black value=dot height=1.5;
-symbol17 interpol=none color=orange value=dot height=1.5;
-symbol18 interpol=none color=brown value=dot height=1.5;
-symbol19 interpol=none color=darkkhaki value=dot height=1.5;
-symbol20 interpol=none color=pink value=dot height=1.5;
-symbol21 interpol=none color=brpk value=dot height=1.5;
-symbol22 interpol=none color=depk value=dot height=1.5;
+symbol12 interpol=none color=green value=dot height=.1;
+symbol13 interpol=none color=red value=dot height=1;
+symbol14 interpol=none color=blue value=dot height=1;
+symbol15 interpol=none color=purple value=dot height=1;
+symbol16 interpol=none color=black value=dot height=1;
+symbol17 interpol=none color=orange value=dot height=1;
+symbol18 interpol=none color=brown value=dot height=1;
+symbol19 interpol=none color=darkkhaki value=dot height=1;
+symbol20 interpol=none color=pink value=dot height=1;
+symbol21 interpol=none color=brpk value=dot height=1;
+symbol22 interpol=none color=depk value=dot height=1;
 axis1 offset=(5, 5);
-axis2 label=("MeanLoss & f2") order=(-9 to 11.5 by 1) minor=(n=1);
+axis2 label=("MeanLoss") order=(-16 to 50 by 1) minor=(n=1);
 proc gplot data=plottingdata;
-	plot meanloss*f5=f2 / vaxis=axis2 haxis=axis1;
+	plot meanloss*f2=f5 / vaxis=axis2 haxis=axis1;
 	*Since the first plot is actually 2 (male female) the corresponding symbol1 and symbol2 options are used which is telling sas to make error bars.  The option is hiloctj;
-	plot2 Mean*f5=f2  / vaxis=axis2 noaxis nolegend;
+	plot2 Mean*f2=f5  / vaxis=axis2 noaxis nolegend;
 	*This plot uses the final 2 symbols options to plot the mean points;
 	run;
 quit;
-/* -----------------------------Zomfg the variances are all over the place----------------------------- */
-
-
-
-/* -----------------------------See how to handle via BLT---------------------------------------------- */
-/* Preliminary Analysis */
-data fVariablesandLoss;
-	set train;
-if loss = 0 then delete;
-run;
-/* proc univariate data = fVariablesandLoss; */
-/* class f2 f5; */
-/* var loss; */
-/* histogram loss; */
-/* run; */
-proc means data=fVariablesandLoss N mean stddev median q1 q3;
-class f2; 
-var loss;
-output out = f2meansout mean=mean std=std;
-run;
-proc print data=f2meansout;
-data f2meansout;
-set f2meansout;
-if _TYPE_^=1  then delete;
-proc sort data=f2meansout; by mean; run;
-data reshape (keep = yvar f2 mean);
-set f2meansout;
-yvar = mean;
-output;
-yvar = mean-std;
-output;
-yvar = mean+std;
-output;
-run;
-/* proc print data=reshape; */
-title 'Means of Loss with SE Bars by f2';
-axis1 offset=(5,5) minor=none;
-axis2 label=(angle=90);
-symbol1 interpol=hiloctj color=blue line=2;
-symbol2 interpol=none color=blue value=dot height=1;
-proc gplot data=reshape;
-plot yvar*f2 mean*f2 / overlay haxis=axis1 vaxis=axis2;
-run; quit;
+/* -----------------------------There's clearly interaction; also Zomfg the variances are all over the place----------------------------- */
 
 /* Model */
 symbol interpol=none color=blue value=dot height=1.5;
-proc glm data=fvariablesandloss plots=residuals;
-class f2;
-model loss = f2;
+proc glm data=train plots=residuals;
+class f2 f5;
+model loss = f2*f5;
 output out=resids rstudent=rstudent p=yhat;
 /* p=yhat makes it use predicted values instead of ... */
 run;
 proc gplot data=resids;
 plot rstudent*yhat;
 run;
-/* f2 Residuals are a disaster so begin transform*/
-
-
-
+/* Residuals are a disaster so begin transform*/
 /* -----------Transform loss using log------------- */
-data fVariablesandLogLoss;
-set fVariablesandLoss;
-logloss = log(loss);
+data trainlogloss;
+set train;
+logloss=log(loss);
 run;
-/* proc print data=fvariablesandlogloss; */
-proc means data=fVariablesandLogLoss N mean stddev median q1 q3;
-class f2;
-var logloss;
-output out = f2meansoutLogLoss mean=mean std=std;
+proc print data=trainlogloss;
+
+/* Run model again with logloss */
+symbol interpol=none color=blue value=dot height=1.5;
+proc glm data=trainlogloss plots=residuals;
+class f2 f5;
+model logloss = f2*f5;
+output out=resids rstudent=rstudent p=yhat;
+/* p=yhat makes it use predicted values instead of ... */
 run;
-/* proc print data=f2meansoutLogloss; run; */
-data f2meansoutLogloss;
-set f2meansoutLogloss;
-if _Type_=0 then delete;
-proc sort data=f2meansoutLogloss; by mean; run;
-/* proc print data=f2meansoutLogloss; run; */
-data reshape (keep = yvar f2 mean);
-set f2meansoutLogloss;
-yvar = mean;
-output;
-yvar = mean-std;
-output;
-yvar = mean+std;
-output;
+proc gplot data=resids;
+plot rstudent*yhat;
 run;
-title 'Means of logLoss with SE Bars by f2';
-axis1 offset=(5,5) minor=none;
-axis2 label=(angle=90);
-symbol1 interpol=hiloctj color=blue line=2;
-symbol2 interpol=none color=blue value=dot height=1.5;
-proc gplot data=reshape;
-plot yvar*f2 mean*f2 / overlay haxis=axis1 vaxis=axis2;
-run; quit;
+/* Residuals looking better but still some patterns */
+/* R2  is stoopid low. This is because the error is soo high. If I could start over I would have chosen a different dataset. */
+
 
 /* Randomized Complete Block Design Model with logloss */
 
-/* proc print data=fvariablesandlogloss; */
-symbol1 interpol=none color=blue value=dot height=.5;
-proc glm data=fvariablesandlogloss plots=residuals;
-class f2 f13;
-model logloss = f2 f13;
-output out=resids rstudent=rstudent p=yhat;
-/* p=yhat makes it use predicted values instead of ... */
-run;
-proc gplot data=resids;
-plot rstudent*yhat;
-run;
-
 /* Contrasts */
 /* f2=1	f2=2	f2=3	f2=4	f2=6	f2=7	f2=8	f2=9	f2=10	f2=11	f5=1	f5=2	f5=3	f5=4	f5=7	f5=10	f5=13	f5=15	f5=16	f5=17 */
-proc glm data=fvariablesandlogloss plots=residuals;
-class f13;
-model logloss = f13;
-/* contrast 'f2' f2 0 0 0 0 0 0 -1 0 0 1/e; */
-run;
+
 
 
 
