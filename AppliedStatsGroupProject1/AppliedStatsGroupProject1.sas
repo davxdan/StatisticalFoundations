@@ -11,10 +11,6 @@ RUN;
 /* Does f2 alone affect the amount of loss? */
 /* Does f5 alone affect the amount of loss? */
 /* Since qoi is only about AMOUNT loss Remove all observations that have no loss */
-data train(keep=f2 f5 loss);
-	set train;
-if loss = 0 then delete;
-run;
 proc sort data=train;
 by f2;
 run;
@@ -25,6 +21,7 @@ proc means data=train n mean max min range std missing noprint fw=8;
 	output out=meansout mean=mean std=std;
 	title 'Summary of loss';
 run;
+proc print data=meansout;
 data summarystats;
 	set meansout;
 	if _TYPE_^=3  then delete;
@@ -72,18 +69,43 @@ axis1 offset=(5, 5);
 axis2 label=("MeanLoss") order=(-16 to 50 by 1) minor=(n=1);
 proc gplot data=plottingdata;
 	plot meanloss*f2=f5 / vaxis=axis2 haxis=axis1;
-	*Since the first plot is actually 2 (male female) the corresponding symbol1 and symbol2 options are used which is telling sas to make error bars.  The option is hiloctj;
 	plot2 Mean*f2=f5  / vaxis=axis2 noaxis nolegend;
-	*This plot uses the final 2 symbols options to plot the mean points;
 	run;
 quit;
 /* -----------------------------There's clearly interaction; also Zomfg the variances are all over the place----------------------------- */
 
+
+/* Model Selection */
+/* Forward */
+proc glmselect data=TRAIN plots=all;
+	class f2 f5 f13;
+	model loss=f2 f5 f13 /selection=Forward
+	cvmethod=random(5) stats=adjrsq;
+/* Backward */
+proc glmselect data=TRAIN plots=all;
+	class f2 f5 f13;
+	model loss=f2 f5 f13  /selection=backward 
+	cvmethod=random(5) stats=adjrsq;
+/* Stepwise */
+proc glmselect data=TRAIN plots=all;
+	class f2 f5 f13;
+	model loss=f2 f5 f13 /selection=stepwise
+	cvmethod=random(5) stats=adjrsq;
+/* Lasso */
+proc glmselect data = TRAIN plots=all;
+class f2 f5 f13;
+model loss=f2 f5 f13 / selection = lasso CVDETAILS;
+run;
+
+
+
+
 /* Model */
 symbol interpol=none color=blue value=dot height=1.5;
-proc glm data=train PLOTS=(DIAGNOSTICS RESIDUALS);
+proc glm data=train PLOTS=(DIAGNOSTICS RESIDUALS)PLOTS(MAXPOINTS=10000);
 class f2 f5;
 model loss = f2 f5 f2*f5;
+lsmeans f2 f5 f2*f5 / pdiff tdiff adjust=bon;
 run;
 /* Residuals are a disaster so begin transform*/
 /* -----------Transform loss using log------------- */
@@ -94,14 +116,20 @@ run;
 proc print data=trainlogloss;
 
 /* Run model again with logloss */
-proc glm data=trainlogloss PLOTS=(DIAGNOSTICS RESIDUALS);
+proc glm data=trainlogloss PLOTS=(DIAGNOSTICS RESIDUALS)PLOTS(MAXPOINTS=10000);
 class f2 f5;
 model logloss = f2 f5 f2*f5;
+lsmeans f2 f5 f2*f5 / pdiff tdiff adjust=bon;
 run;
 /* Residuals looking better but still some patterns and extreme observations */
 /* Type 3 is when we adjust variance for both explanatory variables. It's different ni this case because the data is unbalances */
 /* Over all f p value 0.0051 so we reject overall null. There indeed is an effect. */
 /*  */
+
+proc sgscatter data = trainlogloss;
+plot logloss*f2;
+
+
 /* f2 pval 0.0265 so F2 is significant */
 /* f5 pval 0.6487 so f5 is not statistically significant */
 /* f2*f5 pval 0.0757 Noy significant */
@@ -109,118 +137,22 @@ run;
 /* this tells me f5 is useless so re-run with only f2 */
 
 /* Run model again with f2 and logloss */
-proc glm data=trainlogloss plots=residuals;
+proc glm data=trainlogloss PLOTS=(DIAGNOSTICS RESIDUALS)PLOTS(MAXPOINTS=10000);
 class f2;
 model logloss = f2;
 output out=resids rstudent=rstudent p=yhat;
 /* p=yhat makes it use predicted values instead of ... */
 run;
-proc gplot data=resids;
-plot rstudent*yhat;
+
+/*  */
+/* The loss doesn't change based on f5 alone p 0.1218 */
+proc glm data=trainlogloss PLOTS=(DIAGNOSTICS RESIDUALS)PLOTS(MAXPOINTS=10000);
+class f5;
+model logloss = f5;
+output out=resids rstudent=rstudent p=yhat;
+/* p=yhat makes it use predicted values instead of ... */
 run;
 
 /* Contrasts */
 /* f2 1	2 3 4 6 7 8 9 10 11 */
 /* f5=1 */
-
-/* 	2 Way ANOVA */
-/* proc glm data=math PLOTS=(DIAGNOSTICS RESIDUALS); */
-/* 	class sex background; */
-/* 	model score=background sex background*sex; */
-/* 	lsmeans background / pdiff tdiff adjust=bon; */
-/* 	estimate 'B vs A' background -1 1 0; */
-/* 	estimate 'What do you think?' background -1 0 1; */
-/* 	estimate 'What do you think2?' sex -1 1; */
-/* 	run; */
-
-/*      Correct Skew*/
-/*	data TRAIN; */
-/*	set WORK.TRAIN; */
-/*	logSalePrice = log(SalePrice);*/
-/*	run;*/
-/*f2, f5, f13 and f778 are categorical,*/
-/*f4 probably categorical, only 61 distinct values*/
-/* Variable Selection Models */
-/* Looking for Large R^2 and small CV Press */
-
-/* Forward */
-/* proc glmselect data=TRAIN plots=all; */
-/* 	class f2 f5 f13 f778; */
-/* 	model loss=f1 f3 f4 f6 f7 f8 f9 f10 /selection=Forward (stop=CV)  */
-/* 		cvmethod=random(5) stats=adjrsq; */
-/* Backward */
-/* proc glmselect data=TRAIN plots=all; */
-/* 	class f2 f5 f13 f778; */
-/* 	model loss=f1 f3 f4 f6 f7 f8 f9 f10 /selection=backward (stop=CV)  */
-/* 		cvmethod=random(5) stats=adjrsq; */
-/* Stepwise */
-/* proc glmselect data=TRAIN plots=all; */
-/* 	class f2 f5 f13 f778; */
-/* 	model loss=f1 f3 f4 f6 f7 f8 f9 f10 /selection=stepwise (stop=CV)  */
-/* 		cvmethod=random(5) stats=adjrsq; */
-
-
-
-			/* -----------------------------Sugi29 SAa Coder's Corner-----------------------------*/
-			/* http://www2.sas.com/proceedings/sugi29/045-29.pdf ABSTRACT: PROC MEANS analyzes datasets */
-			/* according to the variables listed in its Class statement. Its computed */
-			/* _TYPE_ variable can be used to determine which class variables were used for the analysis variable calculation. It */
-			/* can be very difficult to determine by inspection of the _TYPE_ variable which class variables were used in a */
-			/* calculation of any given row. The %TypeFormat macro takes the CLASS variable list and creates a format that */
-			/* associates the values of the _TYPE_ variable with a string listing the variables used in the calculation separated by */
-			/* the '*' character. */
-			/* A group of rows with identical _TYPE_ values indicates that the same variables were used in calculating the analysis */
-			/* variables, and each row with this _TYPE_ value represents a different combination of the level of the variables. */
-			/* Rows with different _TYPE_ variables indicate that different combinations of variables were used.  */
-			/* A solution to this problem is to use the %TypeFormat macro (code included), which associates the _TYPE_ variable value to a */
-			/* string that lists the classification variables used in a particular calculation. */
-			%macro TypeFormat(formatname=typefmt,var=x1 x2 x3 x4);
-			/* Count the number of variables, put into var_count */
-			%local var_count; %let var_count = 1;
-			%do %until (%scan(&var,&var_count) eq); %let var_count = %eval(&var_count+1); %end;
-			%let var_count = %eval(&var_count-1);
-			/* Assign each variable name to an indexed macro &&var_val&i */
-			%local i; %let i = %eval(&var_count);
-			%do %until (&i <= 0);
-			 %local var_val&i;
-			%let var_val&i = %scan(&var,&i); %let i = %eval(&i-1);
-			 %end;
-			/* Create temp dataset to use as format */
-			data _tmp;
-			keep label start fmtname type;
-			retain fmtname "&formatname" type 'n';
-			length label $ 256 sep $ 1;
-			sep = '*'; * Separator character;
-			/* Loop through the type combinations */
-			type_iter = 2**(&var_count) - 1; * Loop through the types;
-			var_iter = &var_count; * Loop over the binary digits;
-			do start = 0 to type_iter; * Type iteration loop;
-			i_tmp = start; label = '';
-			do j = var_iter to 1 by (-1); * Binary digit loop;
-			 bin_digit = int(i_tmp/(2**(j-1)));
-			if bin_digit = 1 then do;
-			 * Get appropriate variable name;
-			x = symget('var_val'||left(trim(put(&var_count - j + 1,3.))));
-			* Add the separator to the string;
-			 x = left(trim(x))||sep;
-			* Append selected variable name to label string;
-			 newlabel = trim(label)||x;
-			 * Reassign label as newlabel;
-			 label = newlabel;
-			* Decrement i_tmp if bin_digit is in types binary representation;
-			 i_tmp = i_tmp - 2**(j-1);
-			 end;
-			 end;
-			label = left(label); * justify label test to left;
-			 len = length(label);
-			* Take off separator that was appended to end;
-			 label = substr(label,1,len-1);
-			 output;
-			 end;
-			 stop;
-			 run;
-			* create the format from _tmp dataset;
-			proc format cntlin=_tmp; run;
-			* Delete _tmp dataset to clean up work library;
-			proc datasets; delete _tmp; quit; run;
-			%mend TypeFormat;
